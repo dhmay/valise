@@ -11,6 +11,8 @@ My personal toolkit.
     brew install swig
     xcode-select --install
 
+Ensure the valise directory is on PYTHONPATH
+
 ### Python
 
     easy_install Cython
@@ -20,4 +22,3 @@ My personal toolkit.
     pip install statsmodels pysam xlsxwriter sphinx 
     pip install sphinxarg sphinxcontrib-programoutput
     pip install rpy2
-    
