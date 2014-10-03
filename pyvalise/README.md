@@ -14,5 +14,10 @@ My personal toolkit.
 ### Python
 
     easy_install Cython
-    pip install distribute numpy ipython nose sympy pandas matplotlib scipy matplotlib_venn lxml pyteomics biopython pandas patsy statsmodels rpy2 pysam xlsxwriter sphinx sphinxarg sphinxcontrib-programoutput
+    pip install distribute numpy ipython nose sympy pandas matplotlib 
+    pip install scipy 
+    pip install matplotlib_venn lxml pyteomics biopython pandas patsy 
+    pip install statsmodels pysam xlsxwriter sphinx 
+    pip install sphinxarg sphinxcontrib-programoutput
+    pip install rpy2
     
