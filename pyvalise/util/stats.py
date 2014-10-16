@@ -7,7 +7,7 @@ from scipy import stats as scistat
 import numpy
 
 __author__ = "Damon May"
-__copyright__ = "Copyright (c) 2012-2014 Fred Hutchinson Cancer Research Center"
+__copyright__ = "Copyright (c) Damon May"
 __license__ = ""
 __version__ = ""
 
