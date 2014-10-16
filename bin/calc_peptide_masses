@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+"""Calculate all possible mass values for a file full of peptides, given
+a set of modifications"""
+
+import logging
+import argparse
+from valise import peptides
+from io import StringIO
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2012-2014 Fred Hutchinson Cancer Research Center"
+__license__ = ""
+__version__ = ""
+
+log = logging.getLogger(__name__)
+
+
+def main():
+    # digest args
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--sequences', help='comma-separated list of peptide sequences')
+    parser.add_argument('--seqfile', type=argparse.FileType('r'),
+                        help='input sequence file'),
+    parser.add_argument('--out', type=argparse.FileType('w'),
+                        help='output file')
+    parser.add_argument('--debug', action="store_true",
+                        help='Enable debug logging')
+    parser.add_argument('--mods',
+                        help='comma-separated modifications. Default C57.021,M15.995V')
+
+    args = parser.parse_args()
+
+    if args.debug:
+        log.setLevel(logging.DEBUG)
+
+    if args.mods:
+        print("parsing modifications...")
+        modifications = []
+        for modstring in args.mods.split(","):
+            mod = peptides.AminoacidModification.parse_string(modstring)
+            modifications.append(mod)
+            print(mod.to_string())
+        print("Done parsing modifications.")
+
+    else:
+        modifications = peptides.MODIFICATIONS_IODOACETAMIDE_OXMVAR
+
+    sequences = list()
+    if args.sequences:
+        sequences.extend(args.sequences.split(","))
+    if args.seqfile:
+        sequences.extend(args.seqfile.read().splitlines())
+    if not sequences:
+        print("at least one sequence must be provided in sequences or seqfile arguments")
+        quit()
+
+    outstream = args.out
+    if not args.out:
+        outstream = StringIO()
+    outstream.write(unicode("\t".join(["peptide", "mod_peptide", "mass"]) + "\n"))
+    for sequence in sequences:
+        for modified_pep in peptides.calc_uniquemass_modpeps(sequence, modifications):
+            outstream.write(unicode("\t".join([sequence, modified_pep.to_string(),
+                                               str(modified_pep.mass)]) + "\n"))
+    if args.out:
+        args.out.close()
+    else:
+        print(outstream.getvalue())
+
+
+main()

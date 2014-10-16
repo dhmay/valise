@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+"""Analyze a fastq file from an aligned HTS sample run on a library"""
+
+import logging
+import argparse
+from pyptides import hts
+from valise.io import fasta_io
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2012-2014 Fred Hutchinson Cancer Research Center"
+__license__ = ""
+__version__ = ""
+
+log = logging.getLogger(__name__)
+
+DEFAULT_MINREADS = 25
+
+
+def main():
+    # digest args
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('inputfile', type=argparse.FileType('r'),
+                        help='input file. Either .bam or .tsv')
+    parser.add_argument('--debug', action="store_true",
+                        help='Enable debug logging')
+    parser.add_argument('dnafasta', type=argparse.FileType('r'),
+                        help='DNA FASTA database')
+    parser.add_argument('proteinfasta', type=argparse.FileType('r'),
+                        help='PROTEIN FASTA database')
+    parser.add_argument('--outanalysis', type=argparse.FileType('w'),
+                        help='Output analysis file')
+    parser.add_argument('--outpdf', type=argparse.FileType('w'),
+                        help='Output PDF')
+    parser.add_argument('--minreadsforoutput', type=int, default=DEFAULT_MINREADS,
+                        help='minimum # of reads to infer that a DNA / protein sequence is present')
+    parser.add_argument('--outproteinfasta', type=argparse.FileType('w'),
+                        help='Output fasta database of protein sequences passing cutoff')
+    parser.add_argument('--outdnafasta', type=argparse.FileType('w'),
+                        help='Output fasta database of DNA sequences passing cutoff')
+    parser.add_argument('--maxreads', type=int, default=999999999999,
+                        help='maximum reads to analyze. For debugging, mostly')
+
+    args = parser.parse_args()
+
+    if args.debug:
+        log.setLevel(logging.DEBUG)
+        hts.log.setLevel(logging.DEBUG)
+
+    if args.library:
+        library = optidelibrary_io.read_library_file(args.library)
+        proteinseq_entryname_map = dict()
+        for entry in library.entries:
+            proteinseq_entryname_map[entry.sequence] = entry.name
+
+    print("Analyzing bam file...")
+    hts_analysis = hts.analyze_htseq_library_run(args.inputfile.name,
+                                                     'GGATCC', 'TAATGCGGCCGC',
+                                                     args.dnafasta,
+                                                     maxreads=args.maxreads)
+    print("Analysis created/loaded with %d sequences." % len(hts_analysis.get_sequences()))
+
+    if args.outanalysis:
+        print("Building analysis file...")
+        hts.write_analysis_to_file(hts_analysis, args.outanalysis)
+        print("Wrote analysis to %s" % args.outanalysis.name)
+    if args.outdnafasta:
+        print("Building output DNA fasta...")
+        in_dnaseqs = fasta_io.load_fasta_name_sequence_map(file(args.dnafasta.name)).values()
+        fasta_entries = hts_analysis.build_dna_fasta_entry_list(args.minreadsforoutput, in_dnaseqs)
+        fasta_io.write_proteins_to_fasta(fasta_entries, args.outdnafasta)
+        print("Wrote %d DNA sequences to fasta." % len(fasta_entries))
+    if args.outproteinfasta:
+        print("Building output protein fasta...")
+        in_proteins = fasta_io.load_fasta_proteins(file(args.proteinfasta.name))
+        fasta_entries = hts_analysis.build_protein_list(args.minreadsforoutput, in_proteins)
+        fasta_io.write_proteins_to_fasta(fasta_entries, args.outproteinfasta)
+        if proteinseq_entryname_map:
+            observed_protein_set = set([x.sequence for x in fasta_entries])
+            library_protein_set = set(proteinseq_entryname_map.keys())
+            print("Library proteins: %d. Observed: %d. In common: %d" %
+                  (len(library_protein_set), len(observed_protein_set),
+                   len(observed_protein_set.intersection(library_protein_set))))
+    if args.outpdf:
+        print("Building charts...")
+        dna_fasta_seqs = fasta_io.load_fasta_name_sequence_map(file(args.dnafasta.name)).values()
+        hts_analysis.build_hts_analysis_charts(args.outpdf, dna_fasta_seqs)
+        print("Wrote charts to %s" % args.outpdf.name)
+
+
+main()
