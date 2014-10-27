@@ -7,7 +7,7 @@ import logging
 from matplotlib.backends.backend_pdf import PdfPages
 import pylab as plt
 from statsmodels.graphics import gofplots
-from pyptides.util import stats as pyptide_stats
+from pyvalise.util import stats as pyptide_stats
 from matplotlib_venn import venn2, venn3
 from scipy.stats import gaussian_kde
 from numpy import arange

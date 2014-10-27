@@ -7,11 +7,11 @@ what we observed.
 """
 
 import logging
-from valise.io import fasta_io
+from pyvalise.io import fasta_io
 from os.path import basename
-from valise.util import dna
+from pyvalise.util import dna
 import pysam
-from valise.util import charts
+from pyvalise.util import charts
 import csv
 
 
@@ -35,6 +35,8 @@ DEFAULT_MIN_READS_TO_KEEP_IN_ANALYSIS = 2
 
 # minimum length of a coded protein to keep in output
 MIN_OUTPUT_PROTEIN_LENGTH = 7
+
+DEFAULT_N_CORES = 6
 
 log = logging.getLogger(__name__)
 
@@ -124,7 +126,7 @@ def analyze_worst_coding_quality_scores(samfile, fasta_file,
 
 
 def analyze_htseq_library_run(bam_filename,
-                              fiveprime_codingstartseq,
+                              fiveprime_beforecodingseq,
                               threeprime_aftercodingseq,
                               fasta_file,
                               min_reads_to_keep=DEFAULT_MIN_READS_TO_KEEP_IN_ANALYSIS,
@@ -159,9 +161,9 @@ def analyze_htseq_library_run(bam_filename,
     # NOTE: This relies on the lengths of all the coding sequences being the same. Will fail for, e.g., chip 7
     #todo: to handle sequences of multiple lengths, instead of using one chrom_codingseq_end, build a map from chrom names to the appropriate end positions
     dummy_chromseq = chrom_name_seq_map.values()[0]
-    chrom_codingseq_start = dummy_chromseq.index(fiveprime_codingstartseq)
-    chrom_codingseq_end = dummy_chromseq.index(threeprime_aftercodingseq) - 1
-    chrom_codingseq = calc_codingseq(dummy_chromseq, fiveprime_codingstartseq, threeprime_aftercodingseq)
+    chrom_codingseq_start = 0
+    chrom_codingseq_end = len(dummy_chromseq) - 1
+    chrom_codingseq = dummy_chromseq
     fiveprime_beforecodingseq = dummy_chromseq[chrom_codingseq_start - 3:chrom_codingseq_start]
 
     samfile = pysam.Samfile(bam_filename, "rb")
@@ -211,7 +213,6 @@ def analyze_htseq_library_run(bam_filename,
             n_reads_unmapped += 1
             if should_include_unmapped:
                 read_codingseq = analyze_unmapped_read(aread,
-                                                       fiveprime_codingstartseq,
                                                        threeprime_aftercodingseq,
                                                        fiveprime_beforecodingseq,
                                                        min_worst_base_qual=min_worst_base_qual)
@@ -326,24 +327,23 @@ def analyze_htseq_library_run(bam_filename,
 
 
 def analyze_unmapped_read(aread,
-                          fiveprime_codingstartseq,
-                          threeprime_aftercodingseq,
                           fiveprime_beforecodingseq,
+                          threeprime_aftercodingseq,
                           min_worst_base_qual=DEFAULT_MIN_WORST_BASE_QUAL):
     """ process an unmapped read by inferring the coding sequence. Very different procedure than for mapped
     reads. If we can do it, return the coding sequence and update the is_reverse
     flag on the read. Otherwise return None"""
     if '_' in aread.seq or 'N' in aread.seq:
         return None
-    # note: this assumes fiveprime_codingstartseq is a palindrome
-    if not fiveprime_codingstartseq in aread.seq:
+    # note: this assumes fiveprime_beforecodingseq is a palindrome
+    if not fiveprime_beforecodingseq in aread.seq:
         return None
     read_revcomp = dna.reverse_complement(aread.seq)
     possible_seqs_with_codingseq = list()
     for read_seq in [aread.seq, read_revcomp]:
         # march back through the sequence that should precede the coding
         # start and look for disagreements
-        coding_startpos = read_seq.index(fiveprime_codingstartseq)
+        coding_startpos = read_seq.index(fiveprime_beforecodingseq)
         found_conflict = False
         for i in xrange(0, len(fiveprime_beforecodingseq)):
             pos_to_consider = coding_startpos - i - 1
@@ -356,7 +356,7 @@ def analyze_unmapped_read(aread,
     if len(possible_seqs_with_codingseq) != 1:
         return None
     seq_with_codingseq = possible_seqs_with_codingseq[0]
-    coding_startpos = seq_with_codingseq.index(fiveprime_codingstartseq)
+    coding_startpos = seq_with_codingseq.index(fiveprime_beforecodingseq) + len(fiveprime_beforecodingseq)
     read_is_reverse_strand = seq_with_codingseq == read_revcomp
     stop_codon_index = coding_startpos
     found_stop = False
@@ -378,115 +378,6 @@ def analyze_unmapped_read(aread,
     aread.is_reverse = read_is_reverse_strand
 
     return read_codingseq
-
-# currently unused code for analyzing unmapped reads separately.
-# def analyze_unmapped_reads(bam_filename, 
-#                             fiveprime_codingstartseq,
-#                             threeprime_aftercodingseq,
-#                             min_reads_to_keep = DEFAULT_MIN_READS_TO_KEEP_IN_ANALYSIS,
-#                             min_worst_base_qual = DEFAULT_MIN_WORST_BASE_QUAL,
-#                             maxreads = 999999999999,
-#                             fiveprime_beforecodingseq = 'GGT'):
-#     samfile = pysam.Samfile(bam_filename, "rb")
-#     #result raw materials
-#     n_reads_checked = 0
-#     n_unmapped_reads_checked = 0
-#     n_reads_kept = 0
-#     n_pos_reads_kept = 0
-#     n_rejected_ambiguous_strand = 0
-#     n_had_codingstart = 0
-#     n_rejected_impossible_start = 0
-#     n_no_stop = 0
-#     n_low_quality = 0
-#     seq_obscodingseq_map = dict()
-#     
-#     for aread in samfile.fetch(until_eof = True):
-#         if n_unmapped_reads_checked >= maxreads:
-#             print("WARNING! Stopping because analyzed %d unmapped reads!" % n_unmapped_reads_checked)
-#             break
-#         if n_reads_checked % 500000 == 0:
-#             print("Checked %d reads total..." % n_reads_checked)
-#         n_reads_checked += 1
-# 
-#         if n_unmapped_reads_checked > 0 and n_unmapped_reads_checked % 10000 == 0:
-#             print("Checked %d unmapped reads. Kept: %d. Pos: %d seqs: %d. Had GGATCC: %d. Impossible start: %d. No stop: %d. Low-qual reads: %d. Ambiguous strand: %d" % 
-#                   (n_unmapped_reads_checked, n_reads_kept, n_pos_reads_kept, 
-#                    len(seq_obscodingseq_map), n_had_codingstart,
-#                    n_rejected_impossible_start,
-#                    n_no_stop, 
-#                    n_low_quality,
-#                    n_rejected_ambiguous_strand))
-#         if not aread.is_unmapped:   
-#             continue
-#         n_unmapped_reads_checked += 1
-# 
-#         if '_' in aread.seq or 'N' in aread.seq:
-#             continue
-#         # note: this assumes fiveprime_codingstartseq is a palindrome
-#         if fiveprime_codingstartseq in aread.seq:
-#             n_had_codingstart += 1
-#         else:
-#             continue
-#         read_revcomp = dna.reverse_complement(aread.seq)  
-#         possible_seqs_with_codingseq = list()
-#         for read_seq in [aread.seq, read_revcomp]:
-#             # march back through the sequence that should precede the coding
-#             # start and look for disagreements
-#             coding_startpos = read_seq.index(fiveprime_codingstartseq) 
-#             found_conflict = False
-#             for i in xrange(0, len(fiveprime_beforecodingseq)):
-#                 pos_to_consider = coding_startpos - i - 1
-#                 if pos_to_consider > 0 and read_seq[pos_to_consider] != fiveprime_beforecodingseq[len(fiveprime_beforecodingseq) - i - 1]:
-#                     found_conflict = True
-#                     break
-#             if not found_conflict:
-#                 possible_seqs_with_codingseq.append(read_seq)
-#         if len(possible_seqs_with_codingseq) != 1:
-#             if len(possible_seqs_with_codingseq) == 2:
-#                 n_rejected_ambiguous_strand += 1
-#             elif len(possible_seqs_with_codingseq) == 0:
-#                 n_rejected_impossible_start += 1
-#             continue
-#         seq_with_codingseq = possible_seqs_with_codingseq[0]
-#         coding_startpos = seq_with_codingseq.index(fiveprime_codingstartseq) 
-#         read_is_reverse_strand = seq_with_codingseq == read_revcomp
-#         stop_codon_index = coding_startpos
-#         found_stop = False
-# 
-#         while len(seq_with_codingseq) > stop_codon_index + 3:
-#             codon = seq_with_codingseq[stop_codon_index:stop_codon_index+3]
-#             if codon == threeprime_aftercodingseq[0:3]:
-#                 found_stop = True
-#                 break
-#             stop_codon_index += 3
-#         if not found_stop:
-#             n_no_stop += 1
-#             continue
-#         read_qualscores = [ ord(x) for x in aread.qual ]   
-#         if min(read_qualscores[coding_startpos:stop_codon_index]) < min_worst_base_qual:
-#             n_low_quality += 1
-#             continue
-#         
-#         #OK, it's a keeper
-#         read_codingseq = seq_with_codingseq[coding_startpos:stop_codon_index] 
-# 
-#         if not read_codingseq in seq_obscodingseq_map:
-#             obscodingseq = ObservedCodingSeq(read_codingseq, 0, 0, False, 
-#                                              '', '', [])
-#             seq_obscodingseq_map[read_codingseq] = obscodingseq
-#         seq_obscodingseq_map[read_codingseq].readcount += 1
-#         if not read_is_reverse_strand:
-#             seq_obscodingseq_map[read_codingseq].readcount_posstrand += 1
-#             n_pos_reads_kept += 1
-#         n_reads_kept += 1
-#                         
-#     log.debug("Reads: %d, Kept: %d. Pos: %d. Seqs: %d. Ambiguous strand: %d" % 
-#           (n_reads_checked, n_reads_kept, n_pos_reads_kept, 
-#            len(seq_obscodingseq_map), n_rejected_ambiguous_strand))
-# 
-#     return HTSLibraryAnalysis(seq_obscodingseq_map.values(),
-#                               min_reads = min_reads_to_keep)         
-
 
 
 def calc_codingseq_safe(dnaseq,
@@ -1121,22 +1012,21 @@ class HTSLibraryAnalysis:
         pdf_file.close()
 
 
-def build_alignment_script(fastq_file, dna_fasta_file, protein_fasta_file,
+def build_alignment_script(fastq_file, dna_fasta_file,
                            alignment_dir, out_file,
                            read_length=DEFAULT_READ_LENGTH,
                            n_cores=DEFAULT_N_CORES,
-                           email='dhmay@fhcrc.org',
+                           email='damonmay@uw.edu',
                            max_diffs=DEFAULT_MAX_ALIGN_DIFFS,
                            library_file=None,
                            min_reads_for_output=20,
                            run_cutadapt=False,
                            build_charts=False):
     """
-    Build a script to perform an alignment and analysis of an HTS run, suitable for running on the cluster.
+    Build a script to perform an alignment of an HTS run
 
     :param fastq_file:
     :param dna_fasta_file:
-    :param protein_fasta_file:
     :param alignment_dir:
     :param out_file:
     :param read_length:
@@ -1160,17 +1050,10 @@ def build_alignment_script(fastq_file, dna_fasta_file, protein_fasta_file,
     fastq_filename = fastq_basename
     if '.fastq' in fastq_basename:
         fastq_basename = fastq_basename[:fastq_basename.index('.fastq')]
-    dna_fasta_entries = fasta_io.load_fasta_proteins(dna_fasta_file)
-    codingseq_length = len(calc_codingseq_safe(dna_fasta_entries[0].sequence, 'GGATCC', 'TAATGCGGCCGC'))
-    print("Coding sequence length: %d" % codingseq_length)
     sai_filename = fastq_basename + '.sai'
     bam_filename = fastq_basename + '.bam'
     sorted_bam_basename = fastq_basename + '.sorted'
     sorted_bam_filename = fastq_basename + '.sorted.bam'
-    analysis_pdf_filename = fastq_basename + '.analysis.pdf'
-    analysis_filename = fastq_basename + '.analysis.tsv'
-    out_proteins_fasta_filename = fastq_basename + '.observed_proteins.fasta'
-    out_dna_fasta_filename = fastq_basename + '.observed_dna.fasta'
 
     script_lines = list()
     script_lines.append("#!/bin/bash")
@@ -1193,26 +1076,6 @@ def build_alignment_script(fastq_file, dna_fasta_file, protein_fasta_file,
     script_lines.append("echo sorting")
     script_lines.append("samtools sort %s %s" % (bam_filename, sorted_bam_basename))
     script_lines.append("samtools index %s" % (sorted_bam_filename))
-
-    if library_file:
-        script_lines.append("echo analyzing")
-        outpdf_argtext = ''
-        if build_charts:
-
-            outpdf_argtext = '--outpdf=%s' % analysis_pdf_filename
-            script_lines.append(
-                "analyze_library_hts %s --outanalysis=%s --library=%s --minreadsforoutput=%d --outproteinfasta=%s --outdnafasta=%s %s %s %s" %
-                (outpdf_argtext, analysis_filename,
-                 library_file.name, min_reads_for_output,
-                 out_proteins_fasta_filename, out_dna_fasta_filename,
-                 sorted_bam_filename, dna_fasta_file.name,
-                 protein_fasta_file.name))
-        else:
-            script_lines.append("#analyze_library_hts %s --library=%s --minreadsforoutput=%d %s %s %s" %
-                                (outpdf_argtext,
-                                 library_file.name, min_reads_for_output,
-                                 analysis_filename, dna_fasta_file.name,
-                                 protein_fasta_file.name))
 
     out_file.write("\n".join(script_lines))
     out_file.write("\n")
