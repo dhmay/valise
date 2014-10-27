@@ -75,6 +75,22 @@ def multiboxplot(valueses, title=None, labels=None):
         ax.set_title(title)
     return figure
 
+def multiviolin_fromxy(xvals, yvals, title=None, minforplot=2):
+    """Turn xy-pair data into violin plots"""
+    xval_yvals_map = {}
+    for i in xrange(0, len(xvals)):
+        if not xvals[i] in xval_yvals_map:
+            xval_yvals_map[xvals[i]] = []
+        xval_yvals_map[xvals[i]].append(yvals[i])
+    valueses = []
+    labels = []
+
+    for xval in sorted(xval_yvals_map.keys()):
+        if len(xval_yvals_map[xval]) >= minforplot:
+            labels.append(xval)
+            valueses.append(xval_yvals_map[xval])
+    return multiviolin(valueses, title, labels)
+
 
 def multiviolin(valueses, title=None, labels=None):
     """multiple violin plots side by side"""

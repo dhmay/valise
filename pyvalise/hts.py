@@ -45,8 +45,9 @@ all_read_qnames = set()
 
 
 def filter_samfile_min_coding_base_qual(in_samfile, out_filepath,
-                                        len_codingseq,
+                                        fasta_file,
                                         fiveprime_codingstartseq='GGATCC',
+                                        threeprime_aftercodingseq='TAATGC',
                                         min_qualscore=DEFAULT_MIN_WORST_BASE_QUAL):
     """Filter a .bam file based on the *lowest* base quality within the
     coding region, starting with fiveprime_codingstartseq and ending with
@@ -54,6 +55,8 @@ def filter_samfile_min_coding_base_qual(in_samfile, out_filepath,
     coding sequences. NOTE: this approach assumes that we know the length of the coding sequence
     (i.e., we're dealing with a variant library). If not, we'll need to determine some other way, e.g.,
     stop codon in the reference sequence."""
+    chrom_name_seq_map = fasta_io.load_fasta_name_sequence_map(fasta_file)
+
     out_samfile = pysam.Samfile(out_filepath, 'wb', template=in_samfile)
     n_reads_kept = 0
     n_reads_evaluated = 0
@@ -68,9 +71,10 @@ def filter_samfile_min_coding_base_qual(in_samfile, out_filepath,
             n_rej_unmapped += 1
             continue
         try:
+            chromname = in_samfile.getrname(aread.tid)
             start_codingseq_ind = aread.seq.index(fiveprime_codingstartseq)
             start_codingseq_refpos = aread.positions[start_codingseq_ind]
-            end_codingseq_refpos = start_codingseq_refpos + len_codingseq - 1
+            end_codingseq_refpos = chrom_name_seq_map[chromname].index(threeprime_aftercodingseq)
             aftercodingseq_ind = 0
             for i in xrange(start_codingseq_ind, len(aread.positions)):
                 if aread.positions[i] <= end_codingseq_refpos:
@@ -156,15 +160,11 @@ def analyze_htseq_library_run(bam_filename,
     # map from "chromosome" names (fasta names) to reference sequences
     chrom_name_seq_map = fasta_io.load_fasta_name_sequence_map(fasta_file)
 
-    # pull out the coding sequence from the first chromosome and use it to determine coding
-    # sequence start and end, and DNA immediately 5' of coding seq.
-    # NOTE: This relies on the lengths of all the coding sequences being the same. Will fail for, e.g., chip 7
-    #todo: to handle sequences of multiple lengths, instead of using one chrom_codingseq_end, build a map from chrom names to the appropriate end positions
-    dummy_chromseq = chrom_name_seq_map.values()[0]
-    chrom_codingseq_start = 0
-    chrom_codingseq_end = len(dummy_chromseq) - 1
-    chrom_codingseq = dummy_chromseq
-    fiveprime_beforecodingseq = dummy_chromseq[chrom_codingseq_start - 3:chrom_codingseq_start]
+    # index of the coding sequence end depends on coding sequence length, must be ascertained for every chrom
+    # dhmay adding this to address chip 7 variable-length issue
+    chromname_codingseqend_map = {}
+    for chromname in chrom_name_seq_map:
+        chromname_codingseqend_map[chromname] = len(chrom_name_seq_map[chromname])
 
     samfile = pysam.Samfile(bam_filename, "rb")
 
@@ -213,8 +213,8 @@ def analyze_htseq_library_run(bam_filename,
             n_reads_unmapped += 1
             if should_include_unmapped:
                 read_codingseq = analyze_unmapped_read(aread,
-                                                       threeprime_aftercodingseq,
                                                        fiveprime_beforecodingseq,
+                                                       threeprime_aftercodingseq,
                                                        min_worst_base_qual=min_worst_base_qual)
                 if not read_codingseq:
                     continue
@@ -224,19 +224,24 @@ def analyze_htseq_library_run(bam_filename,
         else:
             # Mapped read.
             # do a bunch of checks to see if we keep this
+
+            # dhmay changing to address variable lengths
+            chromname = samfile.getrname(aread.tid)
+            chrom_codingseq_end = chromname_codingseqend_map[chromname]
+
             n_reads_mapped += 1
-            if aread.pos > chrom_codingseq_start or aread.aend < chrom_codingseq_end:
+            if aread.pos > 0 or aread.aend < chrom_codingseq_end:
+                #print("%d  %d, %d" % (aread.pos, aread.aend, chrom_codingseq_end))
                 # read starts after coding sequence or ends before
                 continue
             # determine the start and end positions of the read relative to the coding sequence. If either of those
             # positions is missing, throw this read away.
-            # todo: change this to handle chroms of different lengths.
             read_coding_start = -1
             read_coding_end = -1
             for i in xrange(0, len(aread.positions)):
-                if aread.positions[i] == chrom_codingseq_start:
+                if aread.positions[i] == 0:
                     read_coding_start = i
-                if aread.positions[i] == chrom_codingseq_end:
+                if aread.positions[i] == chrom_codingseq_end-1:
                     read_coding_end = i
 
             if read_coding_start == -1 or read_coding_end == -1:
@@ -261,10 +266,10 @@ def analyze_htseq_library_run(bam_filename,
         if 'N' in read_codingseq or '_' in read_codingseq:
             continue
 
-        if len(chrom_codingseq) % 3 != len(read_codingseq) % 3:
-            #                    print("OUT OF FRAME")
-            if remove_outofframe:
-                continue
+#        if len(chrom_codingseq) % 3 != len(read_codingseq) % 3:
+#            #                    print("OUT OF FRAME")
+#            if remove_outofframe:
+#                continue
 
         if not aread.is_unmapped and not read_codingseq:
             print("AARGS: %s %d %d" % (aread.seq, read_coding_start, read_coding_end))
@@ -309,9 +314,9 @@ def analyze_htseq_library_run(bam_filename,
                 if not ref_pos:
                     continue
                 ref_pos = int(ref_pos)
-                if ref_pos >= chrom_codingseq_start and ref_pos <= chrom_codingseq_end:
+                if ref_pos >= 0 and ref_pos <= chrom_codingseq_end:
                     if not read_pos or aread.seq[read_pos] != obscodingseq.refseq_sequence[ref_pos]:
-                        diff_positions.append(ref_pos - chrom_codingseq_start)
+                        diff_positions.append(ref_pos - 0)
             obscodingseq.refseq_diffpositions = diff_positions
 
         if not aread.is_reverse:
@@ -675,7 +680,7 @@ def write_analysis_to_file(library_analysis, outfile,
     if should_sort:
         library_analysis.observed_codingseqs.sort(key=lambda x: x.readcount, reverse=True)
     outfile.write("\t".join(['sequence', 'readcount', 'readcount_posstrand', 'has_refseq',
-                             'refseq_name', 'refseq_sequence', 'diff_positions']) + '\n')
+                             'refseq_name', 'refseq_sequence', 'n_diffs', 'diff_positions']) + '\n')
     for obscodingseq in library_analysis.observed_codingseqs:
         outfile.write(str(obscodingseq) + '\n')
 
@@ -727,7 +732,7 @@ class ObservedCodingSeq:
         return '\t'.join([self.sequence, str(self.readcount),
                           str(self.readcount_posstrand),
                           has_refseq_str, self.refseq_name,
-                          self.refseq_sequence, diffpos_str])
+                          self.refseq_sequence, str(len(self.refseq_diffpositions)), diffpos_str])
 
 
 class HTSLibraryAnalysis:
@@ -897,17 +902,12 @@ class HTSLibraryAnalysis:
             known_codingseqs = [calc_codingseq_safe(seq, threeprime_codingstart, fiveprime_noncodingstart) for seq in
                                 known_sequences]
 
-        for readcount_range in [(1, 9999999999),
-                                (3, 9999999999),
-                                (3, 50),
-                                (51, 9999999999),
-                                (1000, 9999999999)]:
+        for readcount_range in [(1, 9999999999)]:
             mychart = self.build_readcount_hist(readcount_range[0], readcount_range[1])
             if mychart:
                 pdf_charts.append(mychart)
 
         for readcount_range in [(1, 9999999999),
-                                (1, 10),
                                 (30, 9999999999)]:
             mychart = self.build_proteinlength_hist(readcount_range[0], readcount_range[1])
             if mychart:
@@ -917,8 +917,9 @@ class HTSLibraryAnalysis:
         n_outofframe = 1
         n_mapped = 0
         n_unmapped = 0
+        min_readcount_for_framecheck = 3
         for obscodingseq in self.observed_codingseqs:
-            if obscodingseq.readcount >= 50:
+            if obscodingseq.readcount >=min_readcount_for_framecheck:
                 if len(obscodingseq.sequence) % 3 == 0:
                     n_inframe += 1
                 else:
@@ -930,43 +931,24 @@ class HTSLibraryAnalysis:
         pdf_charts.append(charts.pie([n_inframe, n_outofframe],
                                      labels=['in frame', 'out of frame'],
                                      title="In (%d) and out (%d) of frame (>= %d reads)" %
-                                           (n_inframe, n_outofframe, 50)))
+                                           (n_inframe, n_outofframe, min_readcount_for_framecheck)))
         print("In frame: %d. Out of frame: %d" % (n_inframe, n_outofframe))
-        pdf_charts.append(charts.pie([n_mapped, n_unmapped],
-                                     labels=['mapped', 'unmapped'],
-                                     title="Mapped (%d) and unmapped (%d) (>= %d reads)" %
-                                           (n_mapped, n_unmapped, 50)))
-        print("mapped: %d. Unmapped: %d" % (n_mapped, n_unmapped))
 
-        readpos_hist = self.build_readpos_hist(30, 100,
-                                               "30-100-read positions different")
-        if readpos_hist:
-            pdf_charts.append(readpos_hist)
-        readpos_hist = self.build_readpos_hist(100, 1000000,
-                                               "100+-read positions different")
+        readpos_hist = self.build_readpos_hist(3, 999999999,
+                                               "seq positions different (3+ reads)")
         if readpos_hist:
             pdf_charts.append(readpos_hist)
 
-        proportions_of_posstrand_reads = list()
-        proportions_of_posstrand_reads_min30 = list()
-        proportions_of_posstrand_reads_knownseqs = list()
+        ns_diffs = list()
+        ns_readcounts = list()
+        min_readcount = 3
         for obscodingseq in self.observed_codingseqs:
-            proportion_pos = float(obscodingseq.readcount_posstrand) / float(obscodingseq.readcount)
-            proportions_of_posstrand_reads.append(proportion_pos)
-            if obscodingseq.readcount >= 30:
-                proportions_of_posstrand_reads_min30.append(proportion_pos)
-            if known_sequences:
-                if obscodingseq.sequence in known_codingseqs:
-                    proportions_of_posstrand_reads_knownseqs.append(proportion_pos)
-        pdf_charts.append(charts.hist(proportions_of_posstrand_reads,
-                                      'proportions of reads with + strand'))
-        if proportions_of_posstrand_reads_min30:
-            pdf_charts.append(charts.hist(proportions_of_posstrand_reads_min30,
-                                          'proportions of reads with + strand (>=30 counts)'))
-        if known_sequences:
-            if proportions_of_posstrand_reads_knownseqs:
-                pdf_charts.append(charts.hist(proportions_of_posstrand_reads_knownseqs,
-                                              'proportions of reads with + strand (known seqs)'))
+            if obscodingseq.readcount >= min_readcount:
+                ns_diffs.append(len(obscodingseq.refseq_diffpositions))
+                ns_readcounts.append(obscodingseq.readcount)
+        if len(ns_diffs) > 2:
+            pdf_charts.append(charts.hist(ns_diffs, "numbers of differences (3+ reads"))
+            pdf_charts.append(charts.scatterplot(ns_diffs, ns_readcounts, "#diffs (x) vs. readcount (y, 3+ reads)"))
 
         if known_sequences:
             print(" Building known-sequence charts...")

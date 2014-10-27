@@ -40,7 +40,7 @@ def load_fasta_sequence_record_map(fasta_file):
     records"""
     result = dict()
     for record in load_fasta_records(fasta_file):
-        result[str(record)] = record
+        result[str(record.seq)] = record
     return result
 
 
@@ -49,7 +49,7 @@ def load_fasta_name_sequence_map(fasta_file):
     record sequences"""
     result = dict()
     for record in load_fasta_records(fasta_file):
-        result[record.name] = str(record)
+        result[record.name] = str(record.seq)
     return result
 
 
