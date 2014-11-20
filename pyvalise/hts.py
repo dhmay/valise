@@ -13,6 +13,7 @@ from pyvalise.util import dna
 import pysam
 from pyvalise.util import charts
 import csv
+import math
 
 
 __author__ = "Damon May"
@@ -262,7 +263,6 @@ def analyze_htseq_library_run(bam_filename,
             continue
 
         # get rid of ambiguous sequences.
-        # todo: these could be useful in a paired-end read context
         if 'N' in read_codingseq or '_' in read_codingseq:
             continue
 
@@ -309,15 +309,35 @@ def analyze_htseq_library_run(bam_filename,
             obscodingseq.has_refseq = True
             obscodingseq.refseq_name = samfile.getrname(aread.tid)
             obscodingseq.refseq_sequence = chrom_name_seq_map[obscodingseq.refseq_name]
-            diff_positions = list()
+            ref_sequence = obscodingseq.refseq_sequence
+
+            obscodingseq.mut_positions_refbased = list()
+            obscodingseq.ins_positions_after_refbased = list()
+            obscodingseq.del_positions_refbased = list()
+
+            refpos_readpos_map = {}
+            last_ref_pos = -1
             for (read_pos, ref_pos) in aread.aligned_pairs:
                 if not ref_pos:
-                    continue
-                ref_pos = int(ref_pos)
-                if ref_pos >= 0 and ref_pos <= chrom_codingseq_end:
-                    if not read_pos or aread.seq[read_pos] != obscodingseq.refseq_sequence[ref_pos]:
-                        diff_positions.append(ref_pos - 0)
-            obscodingseq.refseq_diffpositions = diff_positions
+                    if last_ref_pos not in obscodingseq.ins_positions_after_refbased:
+                        obscodingseq.ins_positions_after_refbased .append(read_pos)
+                else:
+                    last_ref_pos = ref_pos
+                refpos_readpos_map[ref_pos] = read_pos
+                if read_pos is not None and ref_pos is not None and aread.seq[read_pos] != ref_sequence[ref_pos]:
+                    obscodingseq.mut_positions_refbased .append(ref_pos)
+
+            for refpos in xrange(0, len(ref_sequence)):
+                if not refpos in refpos_readpos_map:
+                    obscodingseq.del_positions_refbased.append(refpos)
+
+            all_bad_poses_set = set()
+
+            all_bad_poses_set.update(obscodingseq.mut_positions_refbased)
+            all_bad_poses_set.update(obscodingseq.ins_positions_after_refbased)
+            all_bad_poses_set.update(obscodingseq.del_positions_refbased)
+            obscodingseq.all_bad_positions_refbased = list(all_bad_poses_set)
+            obscodingseq.all_bad_positions_refbased.sort()
 
         if not aread.is_reverse:
             obscodingseq.readcount_posstrand += 1
@@ -722,7 +742,14 @@ class ObservedCodingSeq:
         self.has_refseq = has_refseq
         self.refseq_name = refseq_name
         self.refseq_sequence = refseq_sequence
+
+        ###BROKEN!!!
         self.refseq_diffpositions = refseq_diffpositions
+        self.mut_positions_refbased = list()
+        self.ins_positions_after_refbased = list()
+        self.del_positions_refbased = list()
+        self.all_bad_positions_refbased = list()
+
 
     def __str__(self):
         diffpos_str = ','.join([str(x) for x in self.refseq_diffpositions])
@@ -761,18 +788,24 @@ class HTSLibraryAnalysis:
         diffpositions = list()
         for obscodingseq in self.observed_codingseqs:
             if obscodingseq.readcount >= min_readcount and obscodingseq.readcount <= max_readcount:
-                diffpositions.extend(obscodingseq.refseq_diffpositions)
+                diffpositions.extend(obscodingseq.all_bad_positions_refbased)
         if len(diffpositions) > 2:
             return charts.hist(diffpositions, title)
         return None
 
-    def build_readcount_hist(self, min_readcount, max_readcount):
+    def build_readcount_hist(self, min_readcount, max_readcount, logmode=False):
         readcounts = list()
         for obscodingseq in self.observed_codingseqs:
             if obscodingseq.readcount >= min_readcount and obscodingseq.readcount <= max_readcount:
-                readcounts.append(obscodingseq.readcount)
+                to_append = obscodingseq.readcount
+                if logmode:
+                    to_append = math.log(to_append)
+                readcounts.append(to_append)
         if len(readcounts) > 2:
-            return charts.hist(readcounts, "Read counts, " + str(min_readcount) + " to " + str(max_readcount))
+            title = "Read counts, " + str(min_readcount) + " to " + str(max_readcount)
+            if logmode:
+                title = "Log " + title
+            return charts.hist(readcounts, title)
         return None
 
     def build_proteinlength_hist(self, min_readcount, max_readcount):
@@ -812,7 +845,6 @@ class HTSLibraryAnalysis:
             if obscodingseq.has_refseq:
                 protein_name = obscodingseq.refseq_name
                 if proteinseq != dna.forward_translate_dna_oneframe(obscodingseq.refseq_sequence):
-                    #               print(self.seq_origseq_diffpositions_map[dnaseq])
                     protein_name = "corrupted_" + protein_name + "_" + proteinseq
 
             result.append(proteins.Protein(protein_name, proteinseq))
@@ -862,7 +894,6 @@ class HTSLibraryAnalysis:
             if obscodingseq.has_refseq:
                 name = obscodingseq.refseq_name
                 if not obscodingseq.sequence in base_dnaseqs:
-                    #                print("%s    %s" % (self.seq_origseq_diffpositions_map[dnaseq], dnaseq))
                     name = "corrupted_" + name + "_" + obscodingseq.sequence
 
             fasta_entries.append(proteins.Protein(name, obscodingseq.sequence))
@@ -902,10 +933,12 @@ class HTSLibraryAnalysis:
             known_codingseqs = [calc_codingseq_safe(seq, threeprime_codingstart, fiveprime_noncodingstart) for seq in
                                 known_sequences]
 
-        for readcount_range in [(1, 9999999999)]:
-            mychart = self.build_readcount_hist(readcount_range[0], readcount_range[1])
-            if mychart:
-                pdf_charts.append(mychart)
+        pdf_charts.append(self.build_readcount_hist(1, 999999999999999, logmode=True))
+
+#        for readcount_range in [(1, 9999999999)]:
+#            mychart = self.build_readcount_hist(readcount_range[0], readcount_range[1])
+#            if mychart:
+#                pdf_charts.append(mychart)
 
         for readcount_range in [(1, 9999999999),
                                 (30, 9999999999)]:
@@ -939,12 +972,55 @@ class HTSLibraryAnalysis:
         if readpos_hist:
             pdf_charts.append(readpos_hist)
 
+        nt_list = ['A', 'T','G','C']
+
+        if known_sequences:
+            nt_count_map = dna.calc_nt_proportion_map(known_sequences)
+            pdf_charts.append(charts.pie([nt_count_map[x] for x in nt_list], labels=nt_list,
+                                         title="library sequence nt proportions"))
+        # show distribution of nucleotides before mutations
+        nt_badcount_map = {'A': 0, 'T': 0, 'G': 0, 'C': 0}
+        for obscodingseq in self.observed_codingseqs:
+            for badpos in obscodingseq.mut_positions_refbased:
+                if badpos-1 in xrange(0, len(obscodingseq.refseq_sequence)):
+                    nt_badcount_map[obscodingseq.refseq_sequence[badpos-1]] += 1
+        pdf_charts.append(charts.pie([nt_badcount_map[x] for x in nt_list], labels=nt_list,
+                          title="Residues before %d mutations" % sum(nt_badcount_map.values())))
+
+        # show distribution of nucleotides before insertions
+        nt_badcount_map = {'A': 0, 'T': 0, 'G': 0, 'C': 0}
+        for obscodingseq in self.observed_codingseqs:
+            for badpos in obscodingseq.ins_positions_after_refbased:
+                if badpos in xrange(0, len(obscodingseq.refseq_sequence)):
+                    nt_badcount_map[obscodingseq.refseq_sequence[badpos]] += 1
+        pdf_charts.append(charts.pie([nt_badcount_map[x] for x in nt_list], labels=nt_list,
+                                     title="Residues before %d insertions" % sum(nt_badcount_map.values())))
+
+        # show distribution of nucleotides before deletions
+        nt_badcount_map = {'A': 0, 'T': 0, 'G': 0, 'C': 0}
+        for obscodingseq in self.observed_codingseqs:
+            for badpos in obscodingseq.ins_positions_after_refbased:
+                if badpos-1 in xrange(0, len(obscodingseq.refseq_sequence)):
+                    nt_badcount_map[obscodingseq.refseq_sequence[badpos-1]] += 1
+        pdf_charts.append(charts.pie([nt_badcount_map[x] for x in nt_list], labels=nt_list,
+                                     title="Residues before %d deletions" % sum(nt_badcount_map.values())))
+
+        # barchart indels vs. mutations
+        n_with_indels = 0
+        n_with_mutations = 0
+        for obscodingseq in self.observed_codingseqs:
+            if len(obscodingseq.ins_positions_after_refbased) + len(obscodingseq.del_positions_refbased) > 0:
+                n_with_indels += 1
+            if len(obscodingseq.mut_positions_refbased) > 0:
+                n_with_mutations += 1
+        pdf_charts.append(charts.multibar([[n_with_indels, n_with_mutations]], labels=["indels","mutations"]))
+
         ns_diffs = list()
         ns_readcounts = list()
         min_readcount = 3
         for obscodingseq in self.observed_codingseqs:
             if obscodingseq.readcount >= min_readcount:
-                ns_diffs.append(len(obscodingseq.refseq_diffpositions))
+                ns_diffs.append(len(obscodingseq.all_bad_positions_refbased))
                 ns_readcounts.append(obscodingseq.readcount)
         if len(ns_diffs) > 2:
             pdf_charts.append(charts.hist(ns_diffs, "numbers of differences (3+ reads"))

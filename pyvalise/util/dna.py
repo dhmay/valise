@@ -23,6 +23,19 @@ IS_DNA_OR_GAP_REX = re.compile("^[ACGTacgt-]*$")
 IS_DNA_OR_GAP_OR_N_REX = re.compile("^[ACGNTacgnt-]*$")
 IS_DNA_OR_N_REX = re.compile("^[ACGNTacgnt]*$")
 
+def calc_nt_proportion_map(dna_sequences):
+    """Build a map from each nucleotide to the proportion of bases in dna_sequences that it represents"""
+    # initially holds counts. Converted before return
+    result = { "A": 0.0, "T": 0.0, "G": 0.0, "C": 0.0 }
+
+    for seq in dna_sequences:
+        for nt in result:
+            result[nt] += seq.count(nt)
+    grandtotal = float(sum(result.values()))
+    for nt in result:
+        result[nt] /= grandtotal
+    return result
+
 def forward_translate_dna_oneframe(dna_sequence, stop_before_stop=False):
     """forward-translate the DNA sequence in Frame 1.
     If stop_before_stop, end with the last AA before the first in-frame stop codon"""
