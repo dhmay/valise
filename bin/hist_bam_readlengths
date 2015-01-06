@@ -50,13 +50,15 @@ def main():
         if n >= args.maxreads:
             print("Stopping early, found %d reads" % n)
             break
-        readlen = aread.qend-aread.qstart+1
-        if readlen<minlen:
-            minlen=readlen
-        if readlen>maxlen:
-            maxlen=readlen
-        readlengths.append(aread.qend-aread.qstart+1)
+        if not aread.aend:
+            continue
         n += 1
+        readlen = aread.aend-aread.pos
+        if readlen < minlen:
+            minlen = readlen
+        if readlen > maxlen:
+            maxlen = readlen
+        readlengths.append(readlen)
     print("Building chart...")
     charts.write_pdf([charts.hist(readlengths, bins=args.bins)], args.out)
     print("Done. Min=%d, max=%d" % (minlen, maxlen))
