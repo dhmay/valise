@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+"""Align the data from a sequencing reaction against the expected sequence"""
+
+import argparse
+import logging
+import pysam
+import sys
+from pyvalise.util import charts
+
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2012-2014 Fred Hutchinson Cancer Research Center"
+__license__ = ""
+__version__ = ""
+
+log = logging.getLogger(__name__)
+
+
+def main():
+    # digest args
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('bamfile', type=argparse.FileType('r'),
+                        help='input BAM file')
+    parser.add_argument('out', type=argparse.FileType('w'),
+                        help='output chart file')
+    parser.add_argument('--bins', type=int, default=200, help='bins for histogram')
+    parser.add_argument('--maxreads', type=int, default=sys.maxsize, help='max reads to use')
+
+    parser.add_argument('--includeunmapped', action="store_true", help='Include unmapped reads?')
+    parser.add_argument('--debug', action="store_true", help='Enable debug logging')
+
+    args = parser.parse_args()
+
+    if args.debug:
+        log.setLevel(logging.DEBUG)
+
+    print("Include unmapped? %s" % args.includeunmapped)
+
+    samfile = pysam.Samfile(args.bamfile.name, "rb")
+    readlengths = []
+    n = 0
+    minlen = sys.maxsize
+    maxlen = 0
+    for aread in samfile.fetch(until_eof=args.includeunmapped):
+        if n % 500000 == 0:
+            print("Read %d reads...." % n)
+        if n >= args.maxreads:
+            print("Stopping early, found %d reads" % n)
+            break
+        readlen = aread.qend-aread.qstart+1
+        if readlen<minlen:
+            minlen=readlen
+        if readlen>maxlen:
+            maxlen=readlen
+        readlengths.append(aread.qend-aread.qstart+1)
+        n += 1
+    print("Building chart...")
+    charts.write_pdf([charts.hist(readlengths, bins=args.bins)], args.out)
+    print("Done. Min=%d, max=%d" % (minlen, maxlen))
+
+
+
+main()
