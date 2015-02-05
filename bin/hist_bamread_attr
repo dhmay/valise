@@ -15,7 +15,7 @@ __version__ = ""
 
 log = logging.getLogger(__name__)
 
-attr_types = ['pos', 'alen']
+attr_types = ['pos', 'alen', 'qlen']
 
 def main():
     # digest args
@@ -54,7 +54,9 @@ def main():
             break
         n += 1
         readval = None
-        if args.attr == 'alen':
+        if args.attr == 'qlen':
+            readval = aread.qlen
+        elif args.attr == 'alen':
             if not aread.aend:
                 continue
             readval = aread.aend-aread.pos

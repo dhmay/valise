@@ -24,7 +24,10 @@ COLORS = ['#0000ff',  # blue
           '#ff0000',  # red
           '#00ff00',  # green
           '#ff00ff',  # purple
-          '#888888']  # grey
+          '#888888',  # grey
+	  '#FFFF00',  # brown?
+	  '#222222',  # dark grey
+	  ] 
 
 DEFAULT_HIST_BINS = 40
 
