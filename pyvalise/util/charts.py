@@ -195,7 +195,7 @@ def line_plot(x_values, y_values, title=None):
     return figure
 
 
-def multiline(x_valueses, y_valueses, labels, title=None, colors=None,
+def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               legend_loc='upper center'):
     """line plot with multiple lines and a legend"""
     figure = plt.figure()
@@ -206,21 +206,26 @@ def multiline(x_valueses, y_valueses, labels, title=None, colors=None,
         x_values = x_valueses[i]
         y_values = y_valueses[i]
         color = colors[i]
-        ax.plot(x_values, y_values, color=color, label=labels[i])
+	if labels:
+            ax.plot(x_values, y_values, color=color, label=labels[i])
+	else:
+            ax.plot(x_values, y_values, color=color)
+
     if title:
         ax.set_title(title)
     # Now add the legend with some customizations.
-    legend = ax.legend(loc=legend_loc, shadow=True)
-    # The frame is matplotlib.patches.Rectangle instance surrounding the legend.
-    frame = legend.get_frame()
-    frame.set_facecolor('0.90')
+    if labels:
+        legend = ax.legend(loc=legend_loc, shadow=True)
+        # The frame is matplotlib.patches.Rectangle instance surrounding the legend.
+        frame = legend.get_frame()
+        frame.set_facecolor('0.90')
 
-    # Set the fontsize
-    for label in legend.get_texts():
-        label.set_fontsize('large')
-
-    for label in legend.get_lines():
-        label.set_linewidth(1.5)  # the legend line width
+        # Set the fontsize
+        for label in legend.get_texts():
+            label.set_fontsize('large')
+    
+        for label in legend.get_lines():
+            label.set_linewidth(1.5)  # the legend line width
     return figure
 
 
