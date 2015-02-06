@@ -20,7 +20,7 @@ __version__ = ""
 log = logging.getLogger(__name__)
 
 # default color sequence for lines and bars. If need more colors, add more colors
-COLORS = ['#0000ff',  # blue
+BASE_COLORS = ['#0000ff',  # blue
           '#ff0000',  # red
           '#00ff00',  # green
           '#ff00ff',  # purple
@@ -28,6 +28,10 @@ COLORS = ['#0000ff',  # blue
 	  '#FFFF00',  # brown?
 	  '#222222',  # dark grey
 	  ] 
+COLORS = []
+for i in xrange(0, 20):
+    COLORS.extend(BASE_COLORS)
+
 
 DEFAULT_HIST_BINS = 40
 
