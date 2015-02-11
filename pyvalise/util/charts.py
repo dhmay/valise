@@ -214,10 +214,10 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         x_values = x_valueses[i]
         y_values = y_valueses[i]
         color = colors[i]
-    if labels:
-            ax.plot(x_values, y_values, color=color, label=labels[i])
-    else:
-            ax.plot(x_values, y_values, color=color)
+        if labels:
+                ax.plot(x_values, y_values, color=color, label=labels[i])
+        else:
+                ax.plot(x_values, y_values, color=color)
 
     if title:
         ax.set_title(title)
