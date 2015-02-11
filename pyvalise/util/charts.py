@@ -7,6 +7,7 @@ import logging
 from matplotlib.backends.backend_pdf import PdfPages
 import pylab as plt
 from statsmodels.graphics import gofplots
+import statsmodels.api as sm
 from pyvalise.util import stats as pyptide_stats
 from scipy.stats import gaussian_kde
 from numpy import arange
@@ -21,13 +22,13 @@ log = logging.getLogger(__name__)
 
 # default color sequence for lines and bars. If need more colors, add more colors
 BASE_COLORS = ['#0000ff',  # blue
-          '#ff0000',  # red
-          '#00ff00',  # green
-          '#ff00ff',  # purple
-          '#888888',  # grey
-	  '#FFFF00',  # brown?
-	  '#222222',  # dark grey
-	  ] 
+               '#ff0000',  # red
+               '#00ff00',  # green
+               '#ff00ff',  # purple
+               '#888888',  # grey
+               '#FFFF00',  # brown?
+               '#222222',  # dark grey
+               ]
 COLORS = []
 for i in xrange(0, 20):
     COLORS.extend(BASE_COLORS)
@@ -189,11 +190,14 @@ def multibar(valueses, labels, title=None, colors=None):
     return figure
 
 
-def line_plot(x_values, y_values, title=None):
+def line_plot(x_values, y_values, title=None, lowess=False):
     """trivial line plot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     ax.plot(x_values, y_values)
+    if lowess:
+        lowess = sm.nonparametric.lowess(y_values, x_values, frac=0.1)
+        ax.plot(lowess[:, 0], lowess[:, 1])
     if title:
         ax.set_title(title)
     return figure
@@ -210,9 +214,9 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         x_values = x_valueses[i]
         y_values = y_valueses[i]
         color = colors[i]
-	if labels:
+    if labels:
             ax.plot(x_values, y_values, color=color, label=labels[i])
-	else:
+    else:
             ax.plot(x_values, y_values, color=color)
 
     if title:
@@ -233,13 +237,16 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     return figure
 
 
-def scatterplot(x_values, y_values, title=None):
+def scatterplot(x_values, y_values, title=None, lowess=True):
     """trivial scatterplot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     ax.scatter(x_values, y_values)
     if title:
         ax.set_title(title)
+    if lowess:
+        lowess = sm.nonparametric.lowess(y_values, x_values, frac=0.1)
+        ax.plot(lowess[:, 0], lowess[:, 1])
     return figure
 
 
