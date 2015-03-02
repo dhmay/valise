@@ -237,7 +237,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     return figure
 
 
-def scatterplot(x_values, y_values, title=None, lowess=True):
+def scatterplot(x_values, y_values, title=None, lowess=False):
     """trivial scatterplot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
