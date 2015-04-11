@@ -5,7 +5,7 @@ a set of modifications"""
 
 import logging
 import argparse
-from pyvalise import peptides
+from pyvalise.proteomics import peptides
 from io import StringIO
 
 __author__ = "Damon May"
