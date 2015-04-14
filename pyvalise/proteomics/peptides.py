@@ -630,3 +630,7 @@ def calc_monoisotopic_mass(modified_pep_sequence, modified_mass_dict):
     """return monoisotopic mass of a modified peptide"""
     return massUtil.calculate_mass(modified_pep_sequence,
                                aa_comp=modified_mass_dict)
+
+def get_aa_mass(aa):
+    """convenience method to get the monoisotopic mass of an amino acid"""
+    return pyteomics_mass.std_aa_mass[aa]
