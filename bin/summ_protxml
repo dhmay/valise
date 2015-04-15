@@ -32,7 +32,8 @@ def main():
 
     print("Evaluating protxml file...")
     colnames = ["group", "protein", "peptides", "alt_names"]
-    args.out.write('\t'.join(colnames) + '\n')
+    if args.out:
+	    args.out.write('\t'.join(colnames) + '\n')
     protxml_groups = protxml_io.read_protxml(args.protxml, args.minprob)
     n_proteins = 0
     n_proteingroups = 0
@@ -55,11 +56,13 @@ def main():
             n_proteins += 1
             peptides_str = ','.join(protein.peptide_seqs)
             alt_names_str = ','.join(protein.alt_names)
-            args.out.write("\t".join([str(group_number), protein.name, peptides_str, alt_names_str]) + '\n')
+	    if args.out:
+                args.out.write("\t".join([str(group_number), protein.name, peptides_str, alt_names_str]) + '\n')
         if kept_this_group:
             n_proteingroups += 1
 
     print("%d protein groups, %d total proteins" % (n_proteingroups, n_proteins))
-    args.out.close()
+    if args.out:
+	    args.out.close()
 
 main()
