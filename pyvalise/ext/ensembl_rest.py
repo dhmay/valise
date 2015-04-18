@@ -43,7 +43,6 @@ class EnsemblRestClient(object):
 
         content = None
         try:
-            print(self.server + endpoint)
             request = urllib2.Request(self.server + endpoint, headers=hdrs)
             response = urllib2.urlopen(request)
             content = response.read()
