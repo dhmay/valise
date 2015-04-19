@@ -69,10 +69,11 @@ class EnsemblRestClient(object):
         )
         return masked_transcript
 
-    def get_transcript_5_cdswithintrons_3(self, transcript_id):
+    def get_transcript_codestartend(self, transcript_id):
         '''
         :param transcript_id:
-        :return: a tuple with (5' UTR, cds with introns, 3' UTR), all uppercase
+        :return: transcript sequence, and 0-based start and end coding positions
+        (end is the last coding position)
         '''
         masked_transcript = self.get_masked_transcript(transcript_id)
         cds_start_idx = -1
@@ -89,12 +90,7 @@ class EnsemblRestClient(object):
                 break
         if cds_last_idx < cds_start_idx:
             raise Exception('no coding region')
-        utr_5prime = masked_transcript[0:cds_start_idx].upper()
-        cds_with_introns = masked_transcript[cds_start_idx:cds_last_idx + 1].upper()
-        utr_3prime = ''
-        if cds_last_idx < len(masked_transcript):
-            utr_3prime = masked_transcript[cds_last_idx + 1:].upper()
-        return utr_5prime, cds_with_introns, utr_3prime
+        return masked_transcript.upper(), cds_start_idx, cds_last_idx
 
 
 

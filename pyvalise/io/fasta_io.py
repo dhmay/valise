@@ -54,12 +54,14 @@ def load_fasta_name_sequence_map(fasta_file):
 
 
 def write_records_to_fasta(records, fasta_file):
-    """write a list of entrys to a fasta file"""
+    """write a list of entries to a fasta file"""
     SeqIO.write(records, fasta_file, "fasta")
 
 
 def build_record_fasta_text(record):
     return ">%s %s\n%s" % (record.name, record.description, record.sequence)
-    
-    
+
+
+def make_dna_seq_record(id, description, seq):
+    return SeqRecord(Seq(seq, IUPAC.ambiguous_dna), id=id, description=description)
 
