@@ -80,13 +80,15 @@ class EnsemblRestClient(object):
             if masked_transcript[i].islower():
                 cds_start_idx = i
                 break
-        assert(cds_start_idx >= 0)
+        if cds_start_idx == -1:
+            raise Exception('no lowercase (coding) bases in transcript')
         cds_last_idx = -1
         for i in xrange(len(masked_transcript)-1, 0, -1):
             if masked_transcript[i].islower():
                 cds_last_idx = i
                 break
-        assert(cds_last_idx > cds_start_idx)
+        if cds_last_idx < cds_start_idx:
+            raise Exception('no coding region')
         utr_5prime = masked_transcript[0:cds_start_idx].upper()
         cds_with_introns = masked_transcript[cds_start_idx:cds_last_idx + 1].upper()
         utr_3prime = ''
