@@ -14,7 +14,7 @@ __copyright__ = "Copyright (c) 2015 Damon May"
 __license__ = ""
 __version__ = ""
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class EnsemblRestClient(object):
     '''copied from:
@@ -61,6 +61,7 @@ class EnsemblRestClient(object):
         return content
 
     def get_masked_transcript(self, transcript_id):
+        logger.debug("get_masked_transcript, id=%s" % transcript_id)
         masked_transcript = self.perform_rest_action(
             '/sequence/id/{0}'.format(transcript_id),
             params={'content-type': 'text/plain',
