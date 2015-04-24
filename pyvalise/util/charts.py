@@ -73,7 +73,7 @@ def multiboxplot(valueses, title=None, labels=None):
     ax.boxplot(valueses)
     tick_locs = list()
     for i in xrange(0, len(valueses)):
-        tick_locs.append(i + 1)
+        tick_locs.append(i)
 
     if labels:
         plt.xticks(tick_locs, labels)
@@ -109,7 +109,7 @@ def multiviolin(valueses, title=None, labels=None):
 
     tick_locs = list()
     for i in xrange(0, len(valueses)):
-        tick_locs.append(i + 1)
+        tick_locs.append(i)
 
     if labels:
         plt.xticks(tick_locs, labels)
