@@ -49,7 +49,7 @@ def read_protxml(prot_xml,
     for group_elem in root.findall(url + 'protein_group'):
 
         group_attrs = parse_attrib(group_elem.attrib)
-        group = ProtXmlGroup(group_attrs['group_number'])
+        group = ProtXmlGroup(group_attrs['group_number'], group_attrs['probability'])
 
         for protein_elem in group_elem.findall(url + 'protein'):
             protein_attrs = parse_attrib(protein_elem.attrib)
@@ -91,9 +91,10 @@ def read_protxml(prot_xml,
 class ProtXmlGroup:
     """Stores what we need from a ProtXml protein group. Add more as needed"""
 
-    def __init__(self, number):
+    def __init__(self, number, probability):
         self.number = number
         self.proteins = list()
+        self.probability = probability
 
     def add_protein(self, protein):
         self.proteins.append(protein)

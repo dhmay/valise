@@ -2,6 +2,7 @@
 """Summarize protXML search results """
 
 from pyvalise.io import protxml_io
+from pyvalise.util import charts
 import argparse
 import logging
 
@@ -20,6 +21,8 @@ def main():
                         help='Minimum ProteinProphet probability to include proteins/groups')
     parser.add_argument('--out', type=argparse.FileType('w'),
                         help='output .tsv file')
+    parser.add_argument('--outpdf', type=argparse.FileType('w'),
+                        help='output .pdf file')
     parser.add_argument('--removenull', action="store_true", default=False,
                         help='Remove proteins whose names end with "null"? (this is the GPM "crap" designation)')
     parser.add_argument('--debug', action="store_true", default=False,
@@ -33,13 +36,27 @@ def main():
     print("Evaluating protxml file...")
     colnames = ["group", "protein", "peptides", "alt_names"]
     if args.out:
-	    args.out.write('\t'.join(colnames) + '\n')
-    protxml_groups = protxml_io.read_protxml(args.protxml, args.minprob)
+        args.out.write('\t'.join(colnames) + '\n')
+    protxml_groups = protxml_io.read_protxml(args.protxml, 0.0)
     n_proteins = 0
     n_proteingroups = 0
+    n_proteingroups_all = 0
+    proteincounts_per_group_all = []
+    proteincounts_per_group_kept = []
+    group_probabilities_all = []
+    n_groups_2plusproteins = 0
+    n_groups_5plusproteins = 0
+    n_groups_10plusproteins = 0
+    encountered_peptides = set()
     for protxml_group in protxml_groups:
+        n_proteingroups_all += 1
+        proteincounts_per_group_all.append(len(protxml_group.proteins))
+        group_probabilities_all.append(protxml_group.probability)
+        if protxml_group.probability < args.minprob:
+            continue
         group_number = protxml_group.number
         kept_this_group = False
+        encountered_peptides_thisgroup = set()
         for protein in protxml_group.proteins:
             # skip crap proteins if specified
             should_skip = False
@@ -56,13 +73,40 @@ def main():
             n_proteins += 1
             peptides_str = ','.join(protein.peptide_seqs)
             alt_names_str = ','.join(protein.alt_names)
-	    if args.out:
-                args.out.write("\t".join([str(group_number), protein.name, peptides_str, alt_names_str]) + '\n')
+            for pepseq in protein.peptide_seqs:
+                if pepseq in encountered_peptides:
+                    print("ERROR! Encountered peptide %s in multiple groups!" % pepseq)
+                encountered_peptides_thisgroup.add(pepseq)
+            if args.out:
+                    args.out.write("\t".join([str(group_number), protein.name, peptides_str, alt_names_str]) + '\n')
+        for pepseq in encountered_peptides_thisgroup:
+            encountered_peptides.add(pepseq)
         if kept_this_group:
             n_proteingroups += 1
+            proteincounts_per_group_kept.append(len(protxml_group.proteins))
+            if len(protxml_group.proteins) > 1:
+                n_groups_2plusproteins += 1
+            if len(protxml_group.proteins) > 4:
+                n_groups_5plusproteins += 1
+            if len(protxml_group.proteins) > 9:
+                n_groups_10plusproteins += 1
 
-    print("%d protein groups, %d total proteins" % (n_proteingroups, n_proteins))
+    print("%d of %d protein groups retained, %d total proteins" % (n_proteingroups, n_proteingroups_all, n_proteins))
+    print("%d total peptides." % len(encountered_peptides))
+    print("Of %d retained groups..." % n_proteingroups)
+    print("  %d have 2+ proteins" % n_groups_2plusproteins)
+    print("  %d have 5+ proteins" % n_groups_5plusproteins)
+    print("  %d have 10+ proteins" % n_groups_10plusproteins)
     if args.out:
-	    args.out.close()
+        args.out.close()
+
+
+
+    if args.outpdf:
+        mycharts = []
+        mycharts.append(charts.hist(group_probabilities_all, "Protein group probabilities", bins=100))
+        mycharts.append(charts.hist(proteincounts_per_group_all, "Proteins per group (all, n=%d)" % n_proteingroups_all, bins=100))
+        mycharts.append(charts.hist(proteincounts_per_group_kept, "Proteins per group (p>%f, n=%d)" % (args.minprob, n_proteingroups), bins=100))
+        charts.write_pdf(mycharts, args.outpdf)
 
 main()
