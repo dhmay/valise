@@ -190,7 +190,8 @@ def multibar(valueses, labels, title=None, colors=None):
     return figure
 
 
-def line_plot(x_values, y_values, title=None, lowess=False):
+def line_plot(x_values, y_values, title=None, lowess=False,
+	      xlabel=None, ylabel=None):
     """trivial line plot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -200,6 +201,10 @@ def line_plot(x_values, y_values, title=None, lowess=False):
         ax.plot(lowess[:, 0], lowess[:, 1])
     if title:
         ax.set_title(title)
+    if xlabel:
+	    ax.set_xlabel(xlabel)
+    if ylabel:
+	    ax.set_ylabel(ylabel)
     return figure
 
 
