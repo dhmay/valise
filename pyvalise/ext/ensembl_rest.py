@@ -73,6 +73,15 @@ class EnsemblRestClient(object):
         )
         return transcript_seq
 
+    def get_transcript_cds(self, transcript_id):
+        logger.debug("get_transcript, id=%s" % transcript_id)
+        transcript_seq = self.do_rest_action(
+            '/sequence/id/{0}'.format(transcript_id),
+            params={'content-type': 'text/plain',
+                    'type': 'cds'}
+        )
+        return transcript_seq
+
     def get_transcript_startend(self, transcript_id):
         """
 
@@ -114,9 +123,9 @@ class EnsemblRestClient(object):
             cds_starts_ends.append((int(data_elem.get("start")), int(data_elem.get("end"))))
         return cds_starts_ends
 
-    def get_transcript_startend(self, transcript_id):
+    def get_transcript_startend_strand(self, transcript_id):
         """
-        get transcript start and end coordinates
+        get transcript start and end coordinates and strand
         :param transcript_id:
         :return: transcript_start, transcript_end, cds_start, cds_end
         """
@@ -131,7 +140,8 @@ class EnsemblRestClient(object):
         data_elem = root.find("data")
         start = int(data_elem.get("start"))
         end = int(data_elem.get("end"))
-        return start, end
+        strand = int(data_elem.get("strand"))
+        return start, end, strand
 
     def translate_position_relative(self, abs_start, abs_end, position, strand):
         """
@@ -156,7 +166,7 @@ class EnsemblRestClient(object):
         """
         logger.debug("get_transcript_with_relcdspos 0")
         transcript_seq = self.get_transcript_seq(transcript_id)
-        transcript_startpos, transcript_endpos = self.get_transcript_startend(transcript_id)
+        transcript_startpos, transcript_endpos, strand = self.get_transcript_startend_strand(transcript_id)
         logger.debug("get_transcript_with_relcdspos 1")
         cds_abs_starts_ends = self.get_transcript_cds_startends(transcript_id)
         logger.debug("get_transcript_with_relcdspos 2")
@@ -168,28 +178,25 @@ class EnsemblRestClient(object):
             raise Exception('Transcript seq length %d does not match start and end %d, %d' %
                             (len(transcript_seq), transcript_startpos, transcript_endpos))
         logger.debug("get_transcript_with_relcdspos 4")
-        is_neg_strand = False
-        if transcript_startpos > transcript_endpos:
-            is_neg_strand = True
         cds_starts_ends_rel = []
         for cds_abs_start, cds_abs_end in cds_abs_starts_ends:
             logger.debug("get_transcript_with_relcdspos cds loop")
-            if is_neg_strand:
-                rel_start = cds_abs_start - transcript_startpos
-                rel_end = cds_abs_end - transcript_startpos
-            else:
+            if strand == -1:
                 rel_start = transcript_endpos - cds_abs_end
                 rel_end = transcript_endpos - cds_abs_start
+            else:
+                rel_start = cds_abs_start - transcript_startpos
+                rel_end = cds_abs_end - transcript_startpos
             cds_starts_ends_rel.append((rel_start, rel_end))
         cds_starts_ends_rel.sort(key=lambda x: x[0])
 
         return transcript_seq, cds_starts_ends_rel
 
-    def get_transcript_cds_3prime_5prime_seqs(self, transcript_id):
+    def get_transcript_cds_5prime_3prime_seqs(self, transcript_id):
         """
         Cover method to get a transcript's CDS, 3' UTR and 5' UTR
         :param transcript_id:
-        :return: CDS, 3' UTR, 5' UTR
+        :return: CDS, 5' UTR, 3' UTR
         """
         transcript_seq, cds_starts_ends_rel = self.get_transcript_with_relcdspos(transcript_id)
 
