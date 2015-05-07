@@ -12,7 +12,7 @@ try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
-from pyvalise import peptides
+from pyvalise.proteomics import peptides
 import xml.dom.minidom as minidom
 
 
@@ -110,7 +110,7 @@ def read_pepxml(pepxml_file,
                     modifications.append(peptides.ModifiedAminoacid(
                         position,
                         modified_mass,
-                        modified_mass - pyptides.get_aa_mass(aa_at_position)))
+                        modified_mass - peptides.get_aa_mass(aa_at_position)))
             if not min_pprophet or probability >= min_pprophet:
                 peptide_id = peptides.PeptideIdentification(scan, time,
                                                             peptide, probability,
