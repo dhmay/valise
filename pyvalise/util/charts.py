@@ -209,9 +209,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 
 
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
-	      linestyles=None,
-              legend_loc='upper center',
-	      xlabel=None, ylabel=None):
+	          linestyles=None, legend_loc='upper center', xlabel=None, ylabel=None):
     """line plot with multiple lines and a legend"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -221,16 +219,16 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         x_values = x_valueses[i]
         y_values = y_valueses[i]
         color = colors[i]
-	if labels:
-	    if linestyles:
+        if labels:
+            if linestyles:
                 ax.plot(x_values, y_values, color=color, label=labels[i], linestyle=linestyles[i])
-	    else:
+            else:
                 ax.plot(x_values, y_values, color=color, label=labels[i])
-	else:
-	    if linestyles:
-                ax.plot(x_values, y_values, color=color)
-	    else:
+        else:
+            if linestyles:
                 ax.plot(x_values, y_values, color=color, linestyle=linestyles[i])
+            else:
+                ax.plot(x_values, y_values, color=color)
     if title:
         ax.set_title(title)
     # Now add the legend with some customizations.
