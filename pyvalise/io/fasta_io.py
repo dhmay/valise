@@ -58,10 +58,55 @@ def write_records_to_fasta(records, fasta_file):
     SeqIO.write(records, fasta_file, "fasta")
 
 
+def write_dna_name_seq_to_fasta(name, seq, fasta_file, description=None):
+    """
+    create a single record for a name and a sequence; write it to a fasta file.
+    Should be able to call this multiple times on a single file
+    :param name:
+    :param seq:
+    :param fasta_file:
+    :return:
+    """
+    write_record_to_fasta(make_dna_seq_record(name, description, seq), fasta_file)
+
+
+def write_protein_name_seq_to_fasta(name, seq, fasta_file, description=""):
+    """
+    create a single record for a name and a sequence; write it to a fasta file.
+    Should be able to call this multiple times on a single file
+    :param name:
+    :param seq:
+    :param fasta_file:
+    :return:
+    """
+    write_record_to_fasta(make_protein_seq_record(name, description, seq), fasta_file)
+
+
+def write_record_to_fasta(record, fasta_file):
+    """write a single record to a fasta file. Should be able to call this
+    multiple times on a single file
+    """
+    SeqIO.write([record], fasta_file, "fasta")
+
+
 def build_record_fasta_text(record):
+    """
+    This is only to be used if other options are difficult, for some reason.
+    Doesn't split seq across lines
+    :param record:
+    :return:
+    """
     return ">%s %s\n%s" % (record.name, record.description, record.sequence)
 
 
+def make_seq_record(id, description, seq, alphabet):
+    return SeqRecord(Seq(seq, alphabet), id=id, description=description)
+
+
 def make_dna_seq_record(id, description, seq):
-    return SeqRecord(Seq(seq, IUPAC.ambiguous_dna), id=id, description=description)
+    return make_seq_record(id, description, seq, IUPAC.ambiguous_dna)
+
+
+def make_protein_seq_record(id, description, seq):
+    return make_seq_record(id, description, seq, IUPAC.protein)
 
