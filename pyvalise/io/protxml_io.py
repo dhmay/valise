@@ -76,12 +76,20 @@ def read_protxml(prot_xml,
                 peptide_attrs = parse_attrib(peptide_elem.attrib)
                 peptide_seqs.add(peptide_attrs['peptide_sequence'])
             spectral_count = protein_attrs['total_number_peptides']
-            group.add_protein(ProtXmlProtein(protein_name, alt_names,
+            protein = ProtXmlProtein(protein_name, alt_names,
                                              peptide_seqs,
                                              probability,
                                              spectral_count,
                                              description,
-                                             protein_attrs['n_indistinguishable_proteins']))
+                                             protein_attrs['n_indistinguishable_proteins'])
+            group.add_protein(protein)
+
+            for analysis_elem in protein_elem.findall(url + 'analysis_result'):
+                # only XPress quantitation supported now
+                if analysis_elem.attrib['analysis'] == 'xpress':
+                    xpress_elem = analysis_elem.find(url + 'XPressRatio')
+                    if xpress_elem is not None:
+                        protein.ratio_light_heavy = float(xpress_elem.attrib['ratio_mean'])
 
         if group.proteins:
             protxml_groups.append(group)
@@ -122,6 +130,7 @@ class ProtXmlProtein:
         self.spectral_count = spectral_count
         self.description = description
         self.n_indistinguishable_proteins = n_indistinguishable_proteins
+        self.ratio_light_heavy = None
 
     def __str__(self):
         return "ProtXmlProtein: %s, prob=%f, peptides=%d, count=%d" % (self.name,
