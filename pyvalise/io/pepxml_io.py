@@ -103,7 +103,7 @@ def read_pepxml(pepxml_file,
             modinfo_elem = search_hit_elem.find(url + 'modification_info')
             if modinfo_elem:
                 for mod_elem in modinfo_elem.findall(url + 'mod_aminoacid_mass'):
-                    #positions in pepXML are 1-based
+                    # positions in pepXML are 1-based
                     position = int(mod_elem.get('position')) - 1
                     aa_at_position = peptide[position]
                     modified_mass = float(mod_elem.get('mass'))
@@ -111,6 +111,16 @@ def read_pepxml(pepxml_file,
                         position,
                         modified_mass,
                         modified_mass - peptides.get_aa_mass(aa_at_position)))
+
+            # read the heavy/light ratio
+            ratio_heavy_light = None
+            for analysis_elem in search_hit_elem.findall(url + 'analysis_result'):
+                # only XPress quantitation supported now
+                if analysis_elem.attrib['analysis'] == 'xpress':
+                    xpress_elem = analysis_elem.find(url + 'xpressratio_result')
+                    if xpress_elem is not None:
+                        ratio_heavy_light = float(xpress_elem.attrib['heavy2light_ratio'])
+                    break
             if not min_pprophet or probability >= min_pprophet:
                 peptide_id = peptides.PeptideIdentification(scan, time,
                                                             peptide, probability,
@@ -121,14 +131,18 @@ def read_pepxml(pepxml_file,
                                                             next_aa=next_aa,
                                                             modifications=modifications,
                                                             spectrum_name=spectrum_name,
-                                                            num_tol_term=num_tol_term)
+                                                            num_tol_term=num_tol_term,
+                                                            ratio_heavy_light=ratio_heavy_light)
                 run_result.peptide_ids.append(peptide_id)
 
     return result
 
 
 def write_pepxml(msms_pipeline_analysis, outfile):
-    """takes a peptides.MSMSPipelineAnalysis and writes it out to a file"""
+    """
+    takes a peptides.MSMSPipelineAnalysis and writes it out to a file.
+    """
+    # TODO: write ratios
     ET.register_namespace('', PEPXML_NS_URL)
     root = ET.Element(PEPXML_NS + "msms_pipeline_analysis")
 
