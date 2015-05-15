@@ -24,6 +24,9 @@ __version__ = ""
 PEPXML_NS_URL = "http://regis-web.systemsbiology.net/pepXML"
 PEPXML_NS = "{" + PEPXML_NS_URL + "}"
 
+# minimum ratio, for pegging 0-ratio values
+MIN_RATIO = 0.001
+
 log = logging.getLogger(__name__)
 
 
@@ -119,7 +122,7 @@ def read_pepxml(pepxml_file,
                 if analysis_elem.attrib['analysis'] == 'xpress':
                     xpress_elem = analysis_elem.find(url + 'xpressratio_result')
                     if xpress_elem is not None:
-                        ratio_heavy_light = float(xpress_elem.attrib['heavy2light_ratio'])
+                        ratio_heavy_light = 1.0 / max(float(xpress_elem.attrib['decimal_ratio']), MIN_RATIO)
                     break
             if not min_pprophet or probability >= min_pprophet:
                 peptide_id = peptides.PeptideIdentification(scan, time,

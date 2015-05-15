@@ -256,7 +256,7 @@ class PeptideIdentification:
     def __init__(self, scan, time, sequence, probability, mass, charge,
                  proteins, observed_mass=None, prev_aa=None,
                  next_aa=None, modifications=None, spectrum_name=None,
-                 num_tol_term=None, light_heavy_ratio=None):
+                 num_tol_term=None, ratio_heavy_light=None):
         self.scan = int(scan)
         self.time = time
         self.sequence = sequence
@@ -272,7 +272,7 @@ class PeptideIdentification:
         self.modifications = modifications
         self.spectrum_name = spectrum_name
         self.num_tol_term = num_tol_term
-        self.light_heavy_ratio = light_heavy_ratio
+        self.ratio_heavy_light = ratio_heavy_light
 
     def get_modpeptide_string(self):
         return ModifiedPeptide(self.sequence, self.modifications).to_string()
