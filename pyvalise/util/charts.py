@@ -251,7 +251,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     return figure
 
 
-def scatterplot(x_values, y_values, title=None, lowess=False):
+def scatterplot(x_values, y_values, title=None, lowess=False,
+                xlabel='', ylabel=''):
     """trivial scatterplot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -261,6 +262,8 @@ def scatterplot(x_values, y_values, title=None, lowess=False):
     if lowess:
         lowess = sm.nonparametric.lowess(y_values, x_values, frac=0.1)
         ax.plot(lowess[:, 0], lowess[:, 1])
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     return figure
 
 
