@@ -7,7 +7,7 @@ My personal toolkit.
 
 ### non-Python
 
-    ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew install swig
     xcode-select --install
 
@@ -17,7 +17,7 @@ Ensure the valise directory is on PYTHONPATH
 
 Note: before installing lxml, run this magic line:
 
-    export C_INCLUDE_PATH=/Applications/Xcode.app//Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/usr/include/libxml2:$C_INCLUDE_PATH
+    export C_INCLUDE_PATH=/Applications/Xcode.app//Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/usr/include/libxml2:$C_INCLUDE_PATH
 
 OK, then do this:
 
