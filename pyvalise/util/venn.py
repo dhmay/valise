@@ -15,24 +15,53 @@ __version__ = ""
 
 log = logging.getLogger(__name__)
 
-
-def venn(lists, title=None, labels=None):
-    """Proportional Venn"""
-    if len(lists) not in [2, 3]:
-        raise Exception("venn() called with %d lists to compare" % len(lists))
+def proportional_venn_from_counts_2d(n_total1, n_total2, n_intersect, title=None, labels=None):
+    """
+    Create a proportional Venn diagram from counts of two sets' total values and intersection
+    :param n_total1:
+    :param n_total2:
+    :param n_intersect:
+    :return:
+    """
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
+    if not labels:
+        labels = [ "Set 1", "Set 2"]
+    c = venn2([n_total1 - n_intersect, n_total2 - n_intersect, n_intersect], set_labels=(labels[0], labels[1]), ax=ax)
+    # hardcode better colors than default
+    c.get_patch_by_id('10').set_color('red')
+    c.get_patch_by_id('01').set_color('blue')
+    c.get_patch_by_id('10').set_edgecolor('none')
+    c.get_patch_by_id('01').set_edgecolor('none')
+    c.get_patch_by_id('10').set_alpha(0.4)
+    c.get_patch_by_id('01').set_alpha(0.4)
+    c.get_patch_by_id('11').set_color('magenta')
+    c.get_patch_by_id('11').set_edgecolor('none')
+    c.get_patch_by_id('11').set_alpha(0.4)
+    if title:
+        ax.set_title(title)
+    return figure
+
+
+
+def proportional_venn_from_lists(lists, title=None, labels=None):
+    """Proportional Venn from two or three lists of items"""
+    if len(lists) not in [2, 3]:
+        raise Exception("venn() called with %d lists to compare" % len(lists))
     sets = []
     if not labels:
         labels = []
     for i in xrange(0, len(lists)):
         sets.append(set(lists[i]))
         labels.append("Set" + str(i + 1))
+    figure = None
     if len(lists) == 2:
         intersection_size = len(sets[0].intersection(sets[1]))
-        venn2([len(sets[0]) - intersection_size, len(sets[1]) - intersection_size,
-               intersection_size], set_labels=(labels[0], labels[1]), ax=ax)
+        figure = proportional_venn_from_counts_2d(len(sets[0]) - intersection_size, len(sets[1]) - intersection_size,
+               intersection_size, labels=(labels[0], labels[1]))
     elif len(lists) == 3:
+        figure = plt.figure()
+        ax = figure.add_subplot(1, 1, 1)
         n_inter_01 = len(sets[0].intersection(sets[1]))
         n_inter_12 = len(sets[1].intersection(sets[2]))
         n_inter_02 = len(sets[0].intersection(sets[2]))
@@ -48,9 +77,9 @@ def venn(lists, title=None, labels=None):
                         n_inter_012 )
         venn3(subsets=subset_sizes,
               set_labels=(labels[0], labels[1], labels[2]), ax=ax)
+        if title:
+            ax.set_title(title)
 
-    if title:
-        ax.set_title(title)
     return figure
 
 
