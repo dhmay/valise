@@ -31,7 +31,8 @@ def main():
                         help='output PDF')
     parser.add_argument('--plotlog', action="store_true",
                         help='log-transform values?')
-
+    parser.add_argument('--missingindicator', default='NA',
+                        help='a value that indicates missingness')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -41,9 +42,9 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    valrowmap1 = csv_io.load_csv_rowmap_by_col(args.infile1, args.mergecolumn)
+    valrowmap1 = csv_io.load_csv_rowmap_by_col(args.infile1, args.mergecolumn, missing_indicator=args.missingindicator)
     print("Values of %s in file %s: %d" % (args.mergecolumn, args.infile1.name, len(valrowmap1)))
-    valrowmap2 = csv_io.load_csv_rowmap_by_col(args.infile2, args.mergecolumn)
+    valrowmap2 = csv_io.load_csv_rowmap_by_col(args.infile2, args.mergecolumn, missing_indicator=args.missingindicator)
     print("Values of %s in file %s: %d" % (args.mergecolumn, args.infile2.name, len(valrowmap2)))
 
     plotcolumns = None
