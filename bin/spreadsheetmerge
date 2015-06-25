@@ -9,6 +9,7 @@ from datetime import datetime
 from pyvalise.io import csv_io
 import math
 import os
+import numpy as np
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -33,6 +34,8 @@ def main():
                         help='log-transform values?')
     parser.add_argument('--missingindicator', default='NA',
                         help='a value that indicates missingness')
+    parser.add_argument('--hidecorrcoef', action="store_true",
+                        help='hide correlation coefficient in chart?')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -78,8 +81,12 @@ def main():
                     xvals.append(xval)
                     yvals.append(yval)
             title = plotcolumn
+            xy_cor = np.corrcoef(xvals, yvals)[0, 0]
+            print("    %s, r=%f" % (plotcolumn, xy_cor))
             if args.plotlog:
                 title = "ln(" + title + ")"
+            if not args.hidecorrcoef:
+                title = title + " (r=" + str(xy_cor)
 
             mycharts.append(charts.scatterplot(xvals, yvals, title=title,
                                                xlabel=os.path.basename(args.infile1.name),
