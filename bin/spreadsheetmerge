@@ -86,7 +86,7 @@ def main():
             if args.plotlog:
                 title = "ln(" + title + ")"
             if not args.hidecorrcoef:
-                title = title + " (r=" + str(xy_cor)
+                title = title + " (r=" + ("%.3f" % xy_cor) + ")"
 
             mycharts.append(charts.scatterplot(xvals, yvals, title=title,
                                                xlabel=os.path.basename(args.infile1.name),
