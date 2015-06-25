@@ -81,7 +81,7 @@ def main():
                     xvals.append(xval)
                     yvals.append(yval)
             title = plotcolumn
-            xy_cor = np.corrcoef(xvals, yvals)[0, 0]
+            xy_cor = np.corrcoef(xvals, yvals)[0, 1]
             print("    %s, r=%f" % (plotcolumn, xy_cor))
             if args.plotlog:
                 title = "ln(" + title + ")"
