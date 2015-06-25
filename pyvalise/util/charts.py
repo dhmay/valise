@@ -252,11 +252,11 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
 
 
 def scatterplot(x_values, y_values, title=None, lowess=False,
-                xlabel='', ylabel=''):
+                xlabel='', ylabel='', pointsize=1):
     """trivial scatterplot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
-    ax.scatter(x_values, y_values)
+    ax.scatter(x_values, y_values, s=pointsize)
     if title:
         ax.set_title(title)
     if lowess:
