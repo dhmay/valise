@@ -117,12 +117,16 @@ def read_pepxml(pepxml_file,
 
             # read the heavy/light ratio
             ratio_heavy_light = None
+            quant_heavy_area = None
+            quant_light_area = None
             for analysis_elem in search_hit_elem.findall(url + 'analysis_result'):
                 # only XPress quantitation supported now
                 if analysis_elem.attrib['analysis'] == 'xpress':
                     xpress_elem = analysis_elem.find(url + 'xpressratio_result')
                     if xpress_elem is not None:
                         ratio_heavy_light = 1.0 / max(float(xpress_elem.attrib['decimal_ratio']), MIN_RATIO)
+                        quant_heavy_area = float(xpress_elem.attrib['heavy_area'])
+                        quant_light_area = float(xpress_elem.attrib['light_area'])
                     break
             if not min_pprophet or probability >= min_pprophet:
                 peptide_id = peptides.PeptideIdentification(scan, time,
@@ -135,7 +139,9 @@ def read_pepxml(pepxml_file,
                                                             modifications=modifications,
                                                             spectrum_name=spectrum_name,
                                                             num_tol_term=num_tol_term,
-                                                            ratio_heavy_light=ratio_heavy_light)
+                                                            ratio_heavy_light=ratio_heavy_light,
+                                                            quant_heavy_area=quant_heavy_area,
+                                                            quant_light_area=quant_light_area)
                 run_result.peptide_ids.append(peptide_id)
 
     return result
