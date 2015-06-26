@@ -11,6 +11,7 @@ import statsmodels.api as sm
 from pyvalise.util import stats as pyptide_stats
 from scipy.stats import gaussian_kde
 from numpy import arange
+import numpy as np
 
 
 __author__ = "Damon May"
@@ -252,11 +253,19 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
 
 
 def scatterplot(x_values, y_values, title=None, lowess=False,
-                xlabel='', ylabel='', pointsize=1):
+                xlabel='', ylabel='', pointsize=1, draw_1to1 = False):
     """trivial scatterplot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     ax.scatter(x_values, y_values, s=pointsize)
+    if draw_1to1:
+        lims = [
+            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+        ]
+        ax.plot(lims, lims, 'k-', alpha=0.75, zorder=0)
+        ax.set_xlim(lims)
+        ax.set_ylim(lims)
     if title:
         ax.set_title(title)
     if lowess:
