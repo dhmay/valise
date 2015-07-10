@@ -69,9 +69,15 @@ def main():
         for plotcolumn in plotcolumns:
             xvals = []
             yvals = []
+            n_xvals_plottable = 0
+            n_yvals_plottable = 0
             for i in xrange(0, len(rows1_inorder)):
                 xvalstr = rows1_inorder[i][plotcolumn]
                 yvalstr = rows2_inorder[i][plotcolumn]
+                if xvalstr:
+                    n_xvals_plottable += 1
+                if yvalstr:
+                    n_yvals_plottable += 1
                 if xvalstr and yvalstr:
                     xval = float(xvalstr)
                     yval = float(yvalstr)
@@ -82,7 +88,8 @@ def main():
                     yvals.append(yval)
             title = plotcolumn
             xy_cor = np.corrcoef(xvals, yvals)[0, 1]
-            print("    %s, r=%f" % (plotcolumn, xy_cor))
+            print("    %s, r=%f. in 1: %d; in 2: %d; comparable: %d" %
+                  (plotcolumn, xy_cor, n_xvals_plottable, n_yvals_plottable, len(xvals)))
             if args.plotlog:
                 title = "ln(" + title + ")"
             if not args.hidecorrcoef:
