@@ -38,6 +38,8 @@ def main():
     parser.add_argument('--removems1', action="store_true", help='Remove MS1 scans?')
     parser.add_argument('--filterscannumfile', type=argparse.FileType('r'),
                         help='a file with scan numbers to filter out, one per line')
+    parser.add_argument('--maxspectra', type=int, default=-1,
+                        help='max spectra to write. If set, will stop writing after this many scans (of any type) are written sequentially.')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -60,6 +62,7 @@ def main():
     index_list_offset = -1
     chromatogram_offset = -1
     n_scans_removed = 0
+    stopping_early = False
     while True:
         line = args.infile.readline()
         if not line:
@@ -75,6 +78,8 @@ def main():
             if "</spectrum>" in line:
                 if removing_spectrum:
                     n_scans_removed += 1
+                elif stopping_early:
+                    None
                 else:
                     buffer_lines.append(line)
                     scan_offset_map[current_scannum] = current_offset
@@ -84,6 +89,8 @@ def main():
                 buffer_lines = []
                 in_spectrum = False
                 removing_spectrum = False
+                if args.maxspectra != -1 and len(scan_offset_map) >= args.maxspectra:
+                    stopping_early = True
             else:
                 if not removing_spectrum:
                     if args.removems1:
@@ -121,6 +128,11 @@ def main():
     args.out.write("</indexedmzML>\n")
     args.out.close()
     print("Done. Removed %d scans" % n_scans_removed)
+
+    outfiler = open(args.out.name)
+    for scan in sorted(scan_offset_map):
+        outfiler.seek(scan_offset_map[scan])
+        print("%d\t%s" % (scan, outfiler.read(100)))
 
 
 start_time = datetime.now()
