@@ -77,7 +77,7 @@ def main():
                     n_scans_removed += 1
                 else:
                     buffer_lines.append(line)
-                    scan_offset_map[current_scannum] = current_offset
+                    scan_offset_map[current_scannum] = current_offset + buffer_lines[0].index("<spectrum")
                     for bufferline in buffer_lines:
                         args.out.write(bufferline)
                         current_offset += len(bufferline)
@@ -85,12 +85,13 @@ def main():
                 in_spectrum = False
                 removing_spectrum = False
             else:
-                if not removing_spectrum:
-                    if args.removems1:
-                        if"cvParam" in line and "ms level" in line:
-                            if "value=\"1\"" in line:
-                                logger.debug("Removing MS1 scan.")
-                                removing_spectrum = True
+                if args.removems1:
+                    if "cvParam" in line and "ms level" in line:
+                        if "value=\"1\"" in line:
+                            if removing_spectrum:
+                                print("WARNING! scan on remove list was an MS1 scan.")
+                            logger.debug("Removing MS1 scan.")
+                            removing_spectrum = True
                 if not removing_spectrum:
                     buffer_lines.append(line)
         else:
