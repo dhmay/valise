@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 """
-Filter an mzML file. This will be brittle, as it doesn't parse the XML
+Filter an mzML file. This will be brittle, as it doesn't parse the XML.
+
+Currently cannot write a proper index. Not sure why. When I try, I succeed
+just fine up until the point at which I've started removing scans. After
+that point, pwiz will barf on the file, saying scan has multiple precursors.
+This message is likely junk -- I think I must have an offset issue.
 """
 
 import argparse
@@ -40,6 +45,7 @@ def main():
                         help='a file with scan numbers to filter out, one per line')
     parser.add_argument('--maxspectra', type=int, default=-1,
                         help='max spectra to write. If set, will stop writing after this many scans (of any type) are written sequentially.')
+    parser.add_argument('--writeindex', action="store_true", help='Write an index? (currently fails)')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -71,6 +77,8 @@ def main():
             args.out.write(line)
             break
         if '<indexList ' in line:
+            if not args.writeindex:
+                break
             index_list_offset = current_offset
         if '<chromatogramList ' in line:
             chromatogram_offset = current_offset
@@ -81,11 +89,13 @@ def main():
                 elif stopping_early:
                     None
                 else:
+                    # write the scan, advance the pointer
                     buffer_lines.append(line)
                     scan_offset_map[current_scannum] = current_offset + buffer_lines[0].index("<spectrum")
                     for bufferline in buffer_lines:
                         args.out.write(bufferline)
                         current_offset += len(bufferline)
+                # under no circumstances do we need the buffer any more
                 buffer_lines = []
                 in_spectrum = False
                 removing_spectrum = False
@@ -120,20 +130,22 @@ def main():
         args.out.write("      <offset idRef=\"controllerType=0 controllerNumber=1 scan=%d\">%d</offset>\n" %
                        (scan, scan_offset_map[scan]))
 
-    args.out.write("    </index>\n")
-    args.out.write("    <index name=\"chromatogram\">\n")
-    args.out.write("      <offset idRef=\"TIC\">%d</offset>\n" % chromatogram_offset)
-    args.out.write("    </index>\n")
-    args.out.write("  </indexList>\n")
-    args.out.write("<indexListOffset>%d</indexListOffset>\n" % index_list_offset)
+    if args.writeindex:
+        args.out.write("    </index>\n")
+        args.out.write("    <index name=\"chromatogram\">\n")
+        args.out.write("      <offset idRef=\"TIC\">%d</offset>\n" % chromatogram_offset)
+        args.out.write("    </index>\n")
+        args.out.write("  </indexList>\n")
+        args.out.write("<indexListOffset>%d</indexListOffset>\n" % index_list_offset)
     args.out.write("</indexedmzML>\n")
     args.out.close()
     print("Done. Removed %d scans" % n_scans_removed)
 
-    outfiler = open(args.out.name)
-    for scan in sorted(scan_offset_map):
-        outfiler.seek(scan_offset_map[scan])
-        print("%d\t%s" % (scan, outfiler.read(100)))
+    if args.writeindex:
+        outfiler = open(args.out.name)
+        for scan in sorted(scan_offset_map):
+            outfiler.seek(scan_offset_map[scan])
+            print("%d\t%s" % (scan, outfiler.read(100)))
 
 
 start_time = datetime.now()
