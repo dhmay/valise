@@ -45,6 +45,8 @@ def main():
                         help='a file with scan numbers to filter out, one per line')
     parser.add_argument('--maxspectra', type=int, default=-1,
                         help='max spectra to write. If set, will stop writing after this many scans (of any type) are written sequentially.')
+    parser.add_argument('--maxms2', type=int, default=-1,
+                        help='max ms2 scans to write.')
     parser.add_argument('--writeindex', action="store_true", help='Write an index? (currently fails)')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
@@ -68,6 +70,8 @@ def main():
     index_list_offset = -1
     chromatogram_offset = -1
     n_scans_removed = 0
+    n_ms2_scans_written = 0
+    is_ms2_scan = False
     stopping_early = False
     while True:
         line = args.infile.readline()
@@ -95,20 +99,24 @@ def main():
                     for bufferline in buffer_lines:
                         args.out.write(bufferline)
                         current_offset += len(bufferline)
+                    if is_ms2_scan:
+                        n_ms2_scans_written += 1
                 # under no circumstances do we need the buffer any more
                 buffer_lines = []
                 in_spectrum = False
+                is_ms2_scan = False
                 removing_spectrum = False
                 if args.maxspectra != -1 and len(scan_offset_map) >= args.maxspectra:
                     stopping_early = True
+                if args.maxms2 != -1 and n_ms2_scans_written >= args.maxms2:
+                    stopping_early = True
             else:
-                if args.removems1:
-                    if "cvParam" in line and "ms level" in line:
-                        if "value=\"1\"" in line:
-                            if removing_spectrum:
-                                print("WARNING! scan on remove list was an MS1 scan.")
-                            logger.debug("Removing MS1 scan.")
+                if "cvParam" in line and "ms level" in line:
+                    if "value=\"1\"" in line:
+                        if args.removems1:
                             removing_spectrum = True
+                    elif "value=\"2\"" in line:
+                        is_ms2_scan = True
                 if not removing_spectrum:
                     buffer_lines.append(line)
         else:
@@ -125,12 +133,12 @@ def main():
             else:
                 args.out.write(line)
                 current_offset += len(line)
-    #write the lines of the index
-    for scan in sorted(scan_offset_map):
-        args.out.write("      <offset idRef=\"controllerType=0 controllerNumber=1 scan=%d\">%d</offset>\n" %
-                       (scan, scan_offset_map[scan]))
 
     if args.writeindex:
+        #write the lines of the index
+        for scan in sorted(scan_offset_map):
+            args.out.write("      <offset idRef=\"controllerType=0 controllerNumber=1 scan=%d\">%d</offset>\n" %
+                           (scan, scan_offset_map[scan]))
         args.out.write("    </index>\n")
         args.out.write("    <index name=\"chromatogram\">\n")
         args.out.write("      <offset idRef=\"TIC\">%d</offset>\n" % chromatogram_offset)
