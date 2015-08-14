@@ -253,11 +253,26 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
 
 
 def scatterplot(x_values, y_values, title=None, lowess=False,
-                xlabel='', ylabel='', pointsize=1, draw_1to1 = False):
-    """trivial scatterplot"""
+                xlabel='', ylabel='', pointsize=1, draw_1to1 = False,
+                colors=None, cmap=None, show_colorbar=False):
+    """
+    scatter plot
+    :param x_values:
+    :param y_values:
+    :param title:
+    :param lowess:
+    :param xlabel:
+    :param ylabel:
+    :param pointsize:
+    :param draw_1to1:
+    :param colors:
+    :param cmap:
+    :param show_colorbar:
+    :return:
+    """
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
-    ax.scatter(x_values, y_values, s=pointsize)
+    myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap)
     if draw_1to1:
         lims = [
             np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
@@ -273,6 +288,8 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
         ax.plot(lowess[:, 0], lowess[:, 1])
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    if show_colorbar:
+        plt.colorbar(myscatter)
     return figure
 
 

@@ -32,6 +32,8 @@ def main():
                         help='output PDF')
     parser.add_argument('--plotlog', action="store_true",
                         help='log-transform values?')
+    parser.add_argument('--plotneglog10', action="store_true",
+                        help='transform values as negative log10?')
     parser.add_argument('--missingindicator', default='NA',
                         help='a value that indicates missingness')
     parser.add_argument('--hidecorrcoef', action="store_true",
@@ -84,6 +86,10 @@ def main():
                     if args.plotlog:
                         xval = math.log(xval)
                         yval = math.log(yval)
+                    elif args.plotneglog10:
+                        xval = -math.log(xval, 10)
+                        yval = -math.log(yval, 10)
+
                     xvals.append(xval)
                     yvals.append(yval)
             title = plotcolumn
