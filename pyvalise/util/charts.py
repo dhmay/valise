@@ -13,6 +13,7 @@ from scipy.stats import gaussian_kde
 from numpy import arange
 import numpy as np
 
+DEFAULT_LOG_BASE=10
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2012-2014 Damon May"
@@ -49,7 +50,8 @@ def write_pdf(figures, pdf_file):
     pdf.close()
 
 
-def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None):
+def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
+         should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
     """trivial histogram.
     Stupidly, the default range doesn't go from 0."""
     figure = plt.figure()
@@ -64,6 +66,10 @@ def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None):
             color=color, range=myrange, bins=bins)
     if title:
         ax.set_title(title)
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if should_logx:
+        plt.xscale('log', basex=log_base)
     return figure
 
 
@@ -192,7 +198,8 @@ def multibar(valueses, labels, title=None, colors=None):
 
 
 def line_plot(x_values, y_values, title=None, lowess=False,
-	      xlabel=None, ylabel=None):
+              xlabel=None, ylabel=None,
+              should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
     """trivial line plot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -203,14 +210,19 @@ def line_plot(x_values, y_values, title=None, lowess=False,
     if title:
         ax.set_title(title)
     if xlabel:
-	    ax.set_xlabel(xlabel)
+        ax.set_xlabel(xlabel)
     if ylabel:
-	    ax.set_ylabel(ylabel)
+        ax.set_ylabel(ylabel)
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if should_logx:
+        plt.xscale('log', basex=log_base)
     return figure
 
 
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
-	          linestyles=None, legend_loc='upper center', xlabel=None, ylabel=None):
+              linestyles=None, legend_loc='upper center', xlabel=None, ylabel=None,
+              should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
     """line plot with multiple lines and a legend"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -245,16 +257,21 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     
         for label in legend.get_lines():
             label.set_linewidth(1.5)  # the legend line width
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if should_logx:
+        plt.xscale('log', basex=log_base)
     if xlabel:
-	    ax.set_xlabel(xlabel)
+        ax.set_xlabel(xlabel)
     if ylabel:
-	    ax.set_ylabel(ylabel)
+        ax.set_ylabel(ylabel)
     return figure
 
 
 def scatterplot(x_values, y_values, title=None, lowess=False,
                 xlabel='', ylabel='', pointsize=1, draw_1to1 = False,
-                colors=None, cmap=None, show_colorbar=False):
+                colors=None, cmap=None, show_colorbar=False,
+                should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
     """
     scatter plot
     :param x_values:
@@ -272,7 +289,10 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
     """
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
-    myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap)
+    if colors:
+        myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap)
+    else:
+        myscatter = ax.scatter(x_values, y_values, s=pointsize, cmap=cmap)
     if draw_1to1:
         lims = [
             np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
@@ -288,6 +308,10 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
         ax.plot(lowess[:, 0], lowess[:, 1])
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if should_logx:
+        plt.xscale('log', basex=log_base)
     if show_colorbar:
         plt.colorbar(myscatter)
     return figure

@@ -8,7 +8,6 @@ import logging
 from datetime import datetime
 import csv
 import math
-import os
 import numpy as np
 from pyvalise.util import charts
 
@@ -19,6 +18,7 @@ __version__ = ""
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_LOG_BASE = charts.DEFAULT_LOG_BASE
 
 def main():
     # declare args
@@ -29,14 +29,16 @@ def main():
     parser.add_argument('column2', help='column name')
     parser.add_argument('--outpdf', type=argparse.FileType('w'),
                         help='output PDF')
-    parser.add_argument('--plotlog1', action="store_true",
+    parser.add_argument('--plotlogx', action="store_true",
                         help='log-transform values from first column?')
-    parser.add_argument('--plotlog2', action="store_true",
+    parser.add_argument('--plotlogy', action="store_true",
                         help='log-transform values from second column?')
-    parser.add_argument('--neglog101', action="store_true",
+    parser.add_argument('--neglog10x', action="store_true",
                         help='transform values from first column as -log10?')
-    parser.add_argument('--neglog102', action="store_true",
+    parser.add_argument('--neglog10y', action="store_true",
                         help='transform values from second column as -log10?')
+    parser.add_argument('--logbase', type=float, default=DEFAULT_LOG_BASE,
+                        help='base for log-transformation')
     parser.add_argument('--histogram', action="store_true",
                         help='also plot a histogram of each column\'s values')
     parser.add_argument('--missingindicator', default='NA',
@@ -67,13 +69,9 @@ def main():
         if xvalstr and yvalstr and xvalstr != args.missingindicator and yvalstr != args.missingindicator:
             xval = float(xvalstr)
             yval = float(yvalstr)
-            if args.plotlog1:
-                xval = math.log(xval)
-            elif args.neglog101:
+            if args.neglog10x:
                 xval = -math.log(xval, 10)
-            if args.plotlog2:
-                yval = math.log(yval)
-            elif args.neglog102:
+            if args.neglog10y:
                 yval = -math.log(yval, 10)
             xvals.append(xval)
             yvals.append(yval)
@@ -82,13 +80,9 @@ def main():
         print("Building charts...")
         col1fortitle = args.column1
         col2fortitle = args.column2
-        if args.plotlog1:
-            col1fortitle = "ln(" + args.column1 + ")"
-        elif args.neglog101:
+        if args.neglog10x:
             col1fortitle = "-log10(" + args.column1 + ")"
-        if args.plotlog2:
-            col2fortitle = "ln(" + args.column2 + ")"
-        elif args.neglog102:
+        if args.neglog10y:
             col2fortitle = "-log10(" + args.column2 + ")"
         title = col1fortitle + " vs. " + col2fortitle
         xy_cor = np.corrcoef(xvals, yvals)[0, 1]
@@ -98,7 +92,10 @@ def main():
             title = title + " (r=" + ("%.3f" % xy_cor) + ")"
         mycharts.append(charts.scatterplot(xvals, yvals, title=title,
                                            xlabel=args.column1,
-                                           ylabel=args.column2))
+                                           ylabel=args.column2,
+                                           should_logx=args.plotlogx,
+                                           should_logy=args.plotlogy,
+                                           log_base=args.logbase))
         if args.histogram:
             mycharts.append(charts.hist(xvals, title=args.column1))
             mycharts.append(charts.hist(yvals, title=args.column2))
