@@ -17,8 +17,6 @@ log = logging.getLogger(__name__)
 
 def load_fasta_records(fasta_file):
     """load a list of all records in a fasta"""
-    result = list()
-
     return SeqIO.parse(fasta_file, "fasta")
 
 

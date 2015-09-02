@@ -221,9 +221,24 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 
 
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
-              linestyles=None, legend_loc='upper center', xlabel=None, ylabel=None,
+              linestyles=None, legend_loc=3, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
-    """line plot with multiple lines and a legend"""
+    """
+
+    :param x_valueses:
+    :param y_valueses:
+    :param labels:
+    :param title:
+    :param colors:
+    :param linestyles:
+    :param legend_loc: IGNORED! I'm in a state of flux wrt how to handle legend positioning.
+    :param xlabel:
+    :param ylabel:
+    :param should_logx:
+    :param should_logy:
+    :param log_base:
+    :return:
+    """
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if not colors:
@@ -246,7 +261,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         ax.set_title(title)
     # Now add the legend with some customizations.
     if labels:
-        legend = ax.legend(loc=legend_loc, shadow=True)
+        legend = ax.legend(bbox_to_anchor=(1.1, 1.05), shadow=True, borderaxespad=0.)
         # The frame is matplotlib.patches.Rectangle instance surrounding the legend.
         frame = legend.get_frame()
         frame.set_facecolor('0.90')
