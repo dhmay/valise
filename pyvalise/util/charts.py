@@ -20,7 +20,7 @@ __copyright__ = "Copyright (c) 2012-2014 Damon May"
 __license__ = ""
 __version__ = ""
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # default color sequence for lines and bars. If need more colors, add more colors
 BASE_COLORS = ['#0000ff',  # blue
@@ -221,7 +221,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 
 
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
-              linestyles=None, legend_loc=3, xlabel=None, ylabel=None,
+              linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
     """
 
@@ -231,7 +231,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     :param title:
     :param colors:
     :param linestyles:
-    :param legend_loc: IGNORED! I'm in a state of flux wrt how to handle legend positioning.
+    :param legend_on_chart:  legend on the chart, rather than off to right
     :param xlabel:
     :param ylabel:
     :param should_logx:
@@ -261,17 +261,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         ax.set_title(title)
     # Now add the legend with some customizations.
     if labels:
-        legend = ax.legend(bbox_to_anchor=(1.1, 1.05), shadow=True, borderaxespad=0.)
-        # The frame is matplotlib.patches.Rectangle instance surrounding the legend.
-        frame = legend.get_frame()
-        frame.set_facecolor('0.90')
-
-        # Set the fontsize
-        for label in legend.get_texts():
-            label.set_fontsize('large')
-    
-        for label in legend.get_lines():
-            label.set_linewidth(1.5)  # the legend line width
+        add_legend_to_chart(ax, legend_on_chart=legend_on_chart)
     if should_logy:
         plt.yscale('log', basey=log_base)
     if should_logx:
@@ -280,6 +270,53 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         ax.set_xlabel(xlabel)
     if ylabel:
         ax.set_ylabel(ylabel)
+    ax.set_aspect(1./ax.get_data_ratio())
+    return figure
+
+
+
+
+
+def multiscatter(x_valueses, y_valueses, title=None,
+                 xlabel='', ylabel='', pointsize=1, labels=None,
+                 should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
+                 legend_on_chart = False):
+    """
+    Scatterplot multiple sets of values in different colors
+    :param x_valueses:
+    :param y_valueses:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param pointsize:
+    :param colors:
+    :param cmap:
+    :param show_colorbar:
+    :param should_logx:
+    :param should_logy:
+    :param log_base:
+    :return:
+    """
+    assert(len(x_valueses) == len(y_valueses))
+
+    for i in xrange(0, len(x_valueses)):
+       assert(len(x_valueses[i]) == len(y_valueses[i]))
+    figure = plt.figure()
+    ax = figure.add_subplot(1, 1, 1)
+    if title:
+        ax.set_title(title)
+    for i in xrange(0, len(x_valueses)):
+        logger.debug("multiscatter set %d, color %s" % (i, COLORS[i]))
+        ax.scatter(x_valueses[i], y_valueses[i], s=pointsize, facecolors=COLORS[i], edgecolors='none', alpha=0.5)
+    if labels:
+        add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=labels)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if should_logx:
+        plt.xscale('log', basex=log_base)
+    ax.set_aspect(1./ax.get_data_ratio())
     return figure
 
 
@@ -305,9 +342,9 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if colors:
-        myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap)
+        myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap, edgecolors=None, alpha=0.5)
     else:
-        myscatter = ax.scatter(x_values, y_values, s=pointsize, cmap=cmap)
+        myscatter = ax.scatter(x_values, y_values, s=pointsize, cmap=cmap, edgecolors=None, alpha=0.5)
     if draw_1to1:
         lims = [
             np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
@@ -384,3 +421,32 @@ def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
         figure.colorbar(cax)
 
     return figure
+
+
+def add_legend_to_chart(ax, legend_on_chart=False, labels=None):
+    """
+    add a legend to the chart. By default, overlapping the chart
+    :param ax:
+    :param legend_off_chart: move the legend entirely off.
+    :return:
+    """
+    if legend_on_chart:
+        if labels:
+            legend = ax.legend(labels, bbox_to_anchor=(1.1, 1.05), shadow=True, borderaxespad=0.)
+        else:
+            legend = ax.legend(bbox_to_anchor=(1.1, 1.05), shadow=True, borderaxespad=0.)
+    else:
+        # shrink x axis by 40%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.6, box.height * 0.6])
+        if labels:
+            legend = ax.legend(labels, loc='center left', bbox_to_anchor=(1, 0.5))
+        else:
+            legend = ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    # The frame is matplotlib.patches.Rectangle instance surrounding the legend.
+    frame = legend.get_frame()
+    frame.set_facecolor('0.90')
+
+    for label in legend.get_lines():
+        label.set_linewidth(1.5)  # the legend line width
