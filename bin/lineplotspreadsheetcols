@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_LOG_BASE = math.e
 
+MAX_LABEL_LEN = 20
+
 
 def main():
     # declare args
@@ -28,7 +30,7 @@ def main():
     parser.add_argument('infile', type=argparse.FileType('r'),
                         help='input spreadsheet file')
     parser.add_argument('columnx', help='X axis column name')
-    parser.add_argument('columnsy', help='Y axis column names', nargs='+')
+    parser.add_argument('columnsy', help='Y axis column names (if empty, use all other cols)', nargs='*')
     parser.add_argument('--outpdf', type=argparse.FileType('w'),
                         help='output PDF')
     parser.add_argument('--plotlogx', action="store_true",
@@ -56,12 +58,22 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
+    dictreader = csv.DictReader(args.infile, delimiter='\t')
+    logger.debug("Columns: %s" % dictreader.fieldnames)
+    if not args.columnsy:
+        args.columnsy = dictreader.fieldnames[:]
+        args.columnsy.remove(args.columnx)
 
     xvals = []
     yvalses = []
     for _ in xrange(0, len(args.columnsy)):
         yvalses.append(list())
-    for row in csv.DictReader(args.infile, delimiter='\t'):
+    rows_byxval = [row for row in dictreader]
+    print(rows_byxval)
+    rows_byxval.sort(key=lambda x: float(x[args.columnx]))
+    print(rows_byxval)
+    for row in rows_byxval:
+        logger.debug("Row: keys=%s" % row.keys())
         xvalstr = row[args.columnx]
         if xvalstr and xvalstr != args.missingindicator:
             xval = float(xvalstr)
@@ -76,13 +88,16 @@ def main():
                     yval = float(yvalstr)
                 yvalses[i].append(yval)
     mycharts = []
+    columnsy_for_labels = args.columnsy[:]
+    for i in xrange(0, len(columnsy_for_labels)):
+        columnsy_for_labels[i] = columnsy_for_labels[i][0:min(MAX_LABEL_LEN, len(columnsy_for_labels[i]))]
     if args.outpdf:
         print("Building charts...")
         colxfortitle = args.columnx
         xvalses = [xvals] * len(args.columnsy)
         mycharts.append(charts.multiline(xvalses, yvalses, title="",
                                          xlabel=colxfortitle, ylabel=args.yaxislabel,
-                                         labels=args.columnsy, should_logx=args.plotlogx,
+                                         labels=columnsy_for_labels, should_logx=args.plotlogx,
                                          should_logy=args.plotlogy, log_base=args.logbase))
         if args.histogram:
             mycharts.append(charts.hist(xvals, title=args.columnx))
