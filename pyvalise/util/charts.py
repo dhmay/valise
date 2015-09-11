@@ -13,7 +13,8 @@ from scipy.stats import gaussian_kde
 from numpy import arange
 import numpy as np
 
-DEFAULT_LOG_BASE=10
+DEFAULT_LOG_BASE = 10
+ALPHA_FOR_MULTISCATTER = 0.85
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2012-2014 Damon May"
@@ -174,7 +175,8 @@ def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None):
     return figure
 
 
-def multibar(valueses, labels, title=None, colors=None):
+def multibar(valueses, labels, title=None, colors=None,
+             legend_labels=None, legend_on_chart=True):
     """barchart of multiple datasets.
     valueses: a list of lists of values. Should have same cardinalities"""
     figure = plt.figure()
@@ -192,8 +194,9 @@ def multibar(valueses, labels, title=None, colors=None):
     for ind in xrange(0, len(tick_xs)):
         tick_xs[ind] = 2 * ind * len(valueses)
     plt.xticks(tick_xs, labels)
-    if title:
+    if legend_labels:
         ax.set_title(title)
+    add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels)
     return figure
 
 
@@ -280,7 +283,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
 def multiscatter(x_valueses, y_valueses, title=None,
                  xlabel='', ylabel='', pointsize=1, labels=None,
                  should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-                 legend_on_chart = False):
+                 legend_on_chart=False, colors=COLORS):
     """
     Scatterplot multiple sets of values in different colors
     :param x_valueses:
@@ -306,8 +309,9 @@ def multiscatter(x_valueses, y_valueses, title=None,
     if title:
         ax.set_title(title)
     for i in xrange(0, len(x_valueses)):
-        logger.debug("multiscatter set %d, color %s" % (i, COLORS[i]))
-        ax.scatter(x_valueses[i], y_valueses[i], s=pointsize, facecolors=COLORS[i], edgecolors='none', alpha=0.5)
+        logger.debug("multiscatter set %d, color %s" % (i, colors[i]))
+        ax.scatter(x_valueses[i], y_valueses[i], s=pointsize, facecolors=colors[i], edgecolors='none',
+                   alpha=ALPHA_FOR_MULTISCATTER)
     if labels:
         add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=labels)
     ax.set_xlabel(xlabel)
@@ -430,12 +434,15 @@ def add_legend_to_chart(ax, legend_on_chart=False, labels=None):
     :param legend_off_chart: move the legend entirely off.
     :return:
     """
+    logger.debug("add_legend_to_chart")
     if legend_on_chart:
+        logger.debug("Printing legend on chart")
         if labels:
             legend = ax.legend(labels, bbox_to_anchor=(1.1, 1.05), shadow=True, borderaxespad=0.)
         else:
             legend = ax.legend(bbox_to_anchor=(1.1, 1.05), shadow=True, borderaxespad=0.)
     else:
+        logger.debug("Printing legend off chart")
         # shrink x axis by 40%
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.6, box.height * 0.6])
