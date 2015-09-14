@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+"""
+Convert a .tsv file into a Markdown-style table
+"""
+
+import argparse
+import logging
+from datetime import datetime
+import csv
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2015 Damon May"
+__license__ = ""
+__version__ = ""
+
+logger = logging.getLogger(__name__)
+
+
+def declare_gather_args():
+    """
+    Declare all arguments, parse them, and return the args dict.
+    Does no validation beyond the implicit validation done by argparse.
+    return: a dict mapping arg names to values
+    """
+
+    # declare args
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('infile', type=argparse.FileType('r'),
+                        help='input file')
+
+    parser.add_argument('--debug', action="store_true", help='Enable debug logging')
+    return parser.parse_args()
+
+
+def main():
+    args = declare_gather_args()
+    # logging
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s: %(message)s")
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+        # any module-specific debugging goes below
+
+    script_start_time = datetime.now()
+    logger.debug("Start time: %s" % script_start_time)
+
+    reader = csv.DictReader(args.infile, delimiter='\t')
+    print(" | ".join(reader.fieldnames))
+    sep_line_blanks = ["---"] * len(reader.fieldnames)
+    print(" | ".join(sep_line_blanks))
+    for row in reader:
+        print(" | ".join([row[colname] for colname in reader.fieldnames]))
+
+
+    logger.debug("End time: %s. Elapsed time: %s" % (datetime.now(), datetime.now() - script_start_time))
+
+
+main()
