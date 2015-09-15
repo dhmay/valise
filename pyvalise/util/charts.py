@@ -176,7 +176,7 @@ def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None):
 
 
 def multibar(valueses, labels, title=None, colors=None,
-             legend_labels=None, legend_on_chart=True):
+             legend_labels=None, legend_on_chart=True, rotate_labels=False):
     """barchart of multiple datasets.
     valueses: a list of lists of values. Should have same cardinalities"""
     figure = plt.figure()
@@ -196,7 +196,7 @@ def multibar(valueses, labels, title=None, colors=None,
     plt.xticks(tick_xs, labels)
     if legend_labels:
         ax.set_title(title)
-    add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels)
+    add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels, rotate_labels=rotate_labels)
     return figure
 
 
@@ -283,7 +283,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
 def multiscatter(x_valueses, y_valueses, title=None,
                  xlabel='', ylabel='', pointsize=1, labels=None,
                  should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-                 legend_on_chart=False, colors=COLORS):
+                 legend_on_chart=False, colors=COLORS, rotate_labels=False):
     """
     Scatterplot multiple sets of values in different colors
     :param x_valueses:
@@ -313,7 +313,7 @@ def multiscatter(x_valueses, y_valueses, title=None,
         ax.scatter(x_valueses[i], y_valueses[i], s=pointsize, facecolors=colors[i], edgecolors='none',
                    alpha=ALPHA_FOR_MULTISCATTER)
     if labels:
-        add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=labels)
+        add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=labels, rotate_labels=rotate_labels)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if should_logy:
@@ -427,7 +427,7 @@ def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
     return figure
 
 
-def add_legend_to_chart(ax, legend_on_chart=False, labels=None):
+def add_legend_to_chart(ax, legend_on_chart=False, labels=None, rotate_labels=False):
     """
     add a legend to the chart. By default, overlapping the chart
     :param ax:
@@ -445,7 +445,7 @@ def add_legend_to_chart(ax, legend_on_chart=False, labels=None):
         logger.debug("Printing legend off chart")
         # shrink x axis by 40%
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.6, box.height * 0.6])
+        ax.set_position([box.x0, box.y0 + box.height * 0.3, box.width * 0.6, box.height * 0.6])
         if labels:
             legend = ax.legend(labels, loc='center left', bbox_to_anchor=(1, 0.5))
         else:
@@ -454,6 +454,11 @@ def add_legend_to_chart(ax, legend_on_chart=False, labels=None):
     # The frame is matplotlib.patches.Rectangle instance surrounding the legend.
     frame = legend.get_frame()
     frame.set_facecolor('0.90')
+
+    if rotate_labels:
+        locs, ticklabels = plt.xticks()
+        logger.debug("Rotating tick labels 90 degrees.")
+        plt.setp(ticklabels, rotation=90)
 
     for label in legend.get_lines():
         label.set_linewidth(1.5)  # the legend line width
