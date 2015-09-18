@@ -43,6 +43,7 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
         # any module-specific debugging goes below
+        xlsx_io.logger.setLevel(logging.DEBUG)
 
     script_start_time = datetime.now()
     logger.debug("Start time: %s" % script_start_time)
