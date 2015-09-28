@@ -25,9 +25,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('infile', type=argparse.FileType('r'),
                         help='input spreadsheet file')
-    parser.add_argument('column', help='column histogram')
     parser.add_argument('outpdf', type=argparse.FileType('w'),
                         help='output PDF')
+    parser.add_argument('--columns', help='column to histogram (if not supplied, all possible columns')
     parser.add_argument('--plotlog', action="store_true",
                         help='log-transform values?')
     parser.add_argument('--missingindicator', default='NA',
@@ -43,17 +43,42 @@ def main():
         logger.setLevel(logging.DEBUG)
 
     reader = csv.DictReader(args.infile, delimiter='\t')
-    assert(args.column in reader.fieldnames)
-    values = []
-    for row in reader:
-        valstring = row[args.column]
-        if valstring and valstring != args.missingindicator:
-            values.append(float(valstring))
-    print("Values of %s: %d" % (args.column, len(values)))
 
-    if args.plotlog:
-        values = [math.log(value) for value in values]
-    mycharts = [charts.hist(values, args.column, bins=args.bins)]
+    columns = []
+    if args.columns:
+        columns = args.columns.split(',')
+        for column in columns:
+            assert(column in reader.fieldnames)
+    else:
+        columns = reader.fieldnames
+    col_values_map = {}
+    for column in columns:
+        col_values_map[column] = []
+    cols_to_remove = set()
+    for row in reader:
+        for column in columns:
+            if column not in cols_to_remove:
+                valstring = row[column]
+                if valstring and valstring != args.missingindicator:
+                    try:
+                        col_values_map[column].append(float(valstring))
+                    except ValueError:
+                        print("Found non-float value for %s" % column)
+                        cols_to_remove.add(column)
+
+    for column in cols_to_remove:
+        del col_values_map[column]
+    for column in col_values_map:
+        print("Values of %s: %d" % (column, len(col_values_map[column])))
+
+    mycharts = []
+    for column in col_values_map:
+        values = col_values_map[column]
+        if not values:
+            continue
+        if args.plotlog:
+            values = [math.log(value) for value in values]
+        mycharts.append(charts.hist(values, column, bins=args.bins))
     charts.write_pdf(mycharts, args.outpdf)
     print("Wrote charts to %s" % args.outpdf.name)
 
