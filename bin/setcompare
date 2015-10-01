@@ -14,12 +14,13 @@ __version__ = ""
 
 logger = logging.getLogger(__name__)
 
+comparison_types = ['union', 'intersection', 'unique1', 'unique2']
 
 def main():
 
     # declare args
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('comparisontype', help='type of comparison (union or intersection)')
+    parser.add_argument('comparisontype', help='type of comparison (%s)' % comparison_types)
     parser.add_argument('infile1', type=argparse.FileType('r'),
                         help='input file1')
     parser.add_argument('infile2', type=argparse.FileType('r'),
@@ -43,6 +44,12 @@ def main():
         output_set = set1.intersection(set2)
     elif args.comparisontype == 'union':
         output_set = set1.union(set2)
+    elif args.comparisontype == 'unique1':
+        set1.difference_update(set2)
+        output_set = set1
+    elif args.comparisontype == 'unique2':
+        set2.difference_update(set1)
+        output_set = set2
     else:
         quit("Invalid comparisontype %s. Quitting." % args.comparisontype)
     for output in output_set:

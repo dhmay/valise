@@ -10,7 +10,6 @@ import csv
 
 log = logging.getLogger(__name__)
 
-
 def read_strings_from_file(infile):
     """read a file that consists of floats, one per line, into a list."""
     lines = infile.read().splitlines()

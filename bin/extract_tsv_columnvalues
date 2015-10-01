@@ -7,10 +7,7 @@ import argparse
 import logging
 from datetime import datetime
 import csv
-import math
-import os
-import numpy as np
-from pyvalise.util import charts
+from pyvalise.io import file_io
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -31,7 +28,9 @@ def main():
     parser.add_argument('--keepmissing', action="store_true", help='Keep missing values')
     parser.add_argument('--missingindicator', default='NA',
                     help='a value that indicates missingness (actual totally missing values will also be considered missing)')
-
+    parser.add_argument('--unique', action="store_true",
+                        help='uniquify values (maintains order)')
+    parser.add_argument('--delimiter', help='delimiter', default='\t')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -41,12 +40,18 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    reader = csv.DictReader(args.infile, delimiter='\t')
-    assert(args.column in reader.fieldnames)
+    reader = csv.DictReader(file_io.BlankCommentCSVFile(args.infile), delimiter=args.delimiter)
+    if args.column not in reader.fieldnames:
+        quit("Column %s not in field names: %s" % (args.column, reader.fieldnames))
+    unique_values_written = set()
     n_rows_written = 0
     for row in reader:
         valstring = row[args.column]
         if args.keepmissing or (valstring and valstring != args.missingindicator):
+            if args.unique:
+                if valstring in unique_values_written:
+                    continue
+                unique_values_written.add(valstring)
             args.out.write(valstring + '\n')
             n_rows_written += 1
 
