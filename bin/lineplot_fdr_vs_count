@@ -37,6 +37,8 @@ def declare_gather_args():
     parser.add_argument('--labels', help='labels for each file')
     parser.add_argument('outpdf', type=argparse.FileType('w'),
                         help='output chart')
+    parser.add_argument('--outpoint01counttable', type=argparse.FileType('w'),
+                        help='output table with filenames and counts at .01. This is admittedly corny')
     parser.add_argument('--hidelegend', action="store_true", help='hide the legend')
 
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
@@ -93,6 +95,16 @@ def main():
                 yvalues.extend([prev_count, len(fdrs_asc)])
         xvalses.append(xvalues)
         yvalses.append(yvalues)
+        if args.outpoint01counttable:
+            count_at_point01 = 0
+            for i in xrange(0, len(xvalues)):
+                if xvalues[i] < 0.01:
+                    count_at_point01 = yvalues[i]
+                else:
+                    break
+            args.outpoint01counttable.write('%s\t%d\n' % (infile.name, count_at_point01))
+    if args.outpoint01counttable:
+        args.outpoint01counttable.close()
 
     mycharts = [charts.multiline(xvalses, yvalses, title=args.title,
                                  xlabel='FDR', ylabel='ID count',
