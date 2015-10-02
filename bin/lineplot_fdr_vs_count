@@ -68,6 +68,7 @@ def main():
     xvalses = []
     yvalses = []
     for infile in args.infiles:
+        print("Processing %s" % infile.name)
         reader = csv.DictReader(infile, delimiter='\t')
         assert(args.fdrcol in reader.fieldnames)
         fdrs_asc = [float(row[args.fdrcol]) for row in reader]
