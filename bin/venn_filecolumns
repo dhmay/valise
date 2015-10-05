@@ -81,9 +81,20 @@ def main():
     if args.labels:
         labels = args.labels.split(',')
         assert(len(labels) == len(args.infiles))
-    mycharts = []
+    # print a summary
     for i in xrange(0, len(labels)):
         print("%s: %d" % (labels[i], len(value_sets[i])))
+    for i in xrange(0, len(labels)):
+        linechunks = [labels[i]]
+        for j in xrange(0, len(labels)):
+            if i == j:
+                overlap = len(value_sets[i])
+            else:
+                overlap = len(value_sets[i].intersection(value_sets[j]))
+        linechunks.append(str(overlap))
+        print('\t'.join(linechunks))
+
+    mycharts = []
     mycharts.append(venn.proportional_venn_from_lists(value_sets,
                                                       title=args.title,
                                                       labels=labels))
