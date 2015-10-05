@@ -3,6 +3,9 @@
 """Charting utilities. Consolidated here so that the rest of the codebase
 isn't dependent on charting implementation (currently matplotlib)."""
 
+import matplotlib
+# so that I can run without X
+matplotlib.use('agg')
 import logging
 from matplotlib.backends.backend_pdf import PdfPages
 import pylab as plt
@@ -12,6 +15,7 @@ from pyvalise.util import stats as pyptide_stats
 from scipy.stats import gaussian_kde
 from numpy import arange
 import numpy as np
+
 
 DEFAULT_LOG_BASE = 10
 ALPHA_FOR_MULTISCATTER = 0.85

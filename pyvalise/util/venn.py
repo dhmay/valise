@@ -4,6 +4,9 @@
 isn't dependent on charting implementation (currently matplotlib)."""
 
 import logging
+import matplotlib
+# so that I can run without X
+matplotlib.use('agg')
 import pylab as plt
 from matplotlib_venn import venn2, venn3
 
