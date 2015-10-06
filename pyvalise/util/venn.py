@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use('agg')
 import pylab as plt
 from matplotlib_venn import venn2, venn3
+logger = logging.getLogger(__name__)
 
 
 __author__ = "Damon May"
@@ -60,8 +61,9 @@ def proportional_venn_from_lists(lists, title=None, labels=None):
     figure = None
     if len(lists) == 2:
         intersection_size = len(sets[0].intersection(sets[1]))
-        figure = proportional_venn_from_counts_2d(len(sets[0]) - intersection_size, len(sets[1]) - intersection_size,
-               intersection_size, labels=(labels[0], labels[1]))
+        logger.debug("Intersection size: %d. Size 1: %d. Size2 2: %d" % (intersection_size, len(sets[0]), len(sets[1])))
+        figure = proportional_venn_from_counts_2d(len(sets[0]), len(sets[1]),
+                                                  intersection_size, labels=(labels[0], labels[1]))
     elif len(lists) == 3:
         figure = plt.figure()
         ax = figure.add_subplot(1, 1, 1)

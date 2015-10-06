@@ -51,6 +51,7 @@ def main():
                         format="%(asctime)s %(levelname)s: %(message)s")
     if args.debug:
         logger.setLevel(logging.DEBUG)
+        venn.logger.setLevel(logging.DEBUG)
         # any module-specific debugging goes below
 
     script_start_time = datetime.now()
@@ -84,6 +85,9 @@ def main():
     # print a summary
     for i in xrange(0, len(labels)):
         print("%s: %d" % (labels[i], len(value_sets[i])))
+    headerchunks = ['']
+    headerchunks.extend(labels)
+    print('\t'.join(headerchunks))
     for i in xrange(0, len(labels)):
         linechunks = [labels[i]]
         for j in xrange(0, len(labels)):
@@ -91,7 +95,7 @@ def main():
                 overlap = len(value_sets[i])
             else:
                 overlap = len(value_sets[i].intersection(value_sets[j]))
-        linechunks.append(str(overlap))
+            linechunks.append(str(overlap))
         print('\t'.join(linechunks))
 
     mycharts = []
