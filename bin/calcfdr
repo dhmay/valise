@@ -38,6 +38,8 @@ def declare_gather_args():
                         help='Name of column in which target or decoy is indicated with a prefix')
     parser.add_argument('--decoyprefix', required=True, help='Decoy prefix')
     parser.add_argument('--fdrcolname', help='Name of FDR column', default='fdr')
+    parser.add_argument('--reportfdr', type=float, help='FDR at which to report a count', default=0.01)
+    parser.add_argument('--maxfdr', type=float, help='FDR cutoff for output', default=1)
 
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     return parser.parse_args()
@@ -64,22 +66,28 @@ def main():
     rows.sort(key=lambda row: float(row[args.scorecol]), reverse=higher_is_better)
 
     header_line = '\t'.join(reader.fieldnames) + '\t' + args.fdrcolname
-    args.out.write(header_line + '\t')
+    args.out.write(header_line + '\n')
 
     n_target = 0.
     n_decoy = 0.
+    n_to_report = 0
     for row in rows:
         is_decoy = row[args.targetdecoycol].startswith(args.decoyprefix)
         if is_decoy:
             n_decoy += 1.
         else:
             n_target += 1.
+        fdr = n_decoy / (n_target + n_decoy)
         if not is_decoy:
-            fdr = n_decoy / (n_target + n_decoy)
-            linefields = [row[colname] for colname in reader.fieldnames]
-            linefields.append(str(fdr))
-            args.out.write('\t'.join(linefields) + '\n')
-            args.out.flush()
+            if fdr <= args.reportfdr and not is_decoy:
+                n_to_report += 1
+            if fdr <= args.maxfdr:
+                linefields = [row[colname] for colname in reader.fieldnames]
+                linefields.append(str(fdr))
+                args.out.write('\t'.join(linefields) + '\n')
+                args.out.flush()
+
+    print("At fdr=%f: %d" % (args.reportfdr, max(n_to_report, 0)))
     print("Targets: %d" % n_target)
     print("Decoys: %d" % n_decoy)
     print("Done.")

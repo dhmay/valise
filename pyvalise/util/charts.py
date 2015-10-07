@@ -152,7 +152,8 @@ def violin_plot(ax, data, pos, bp=True, color='y'):
         ax.boxplot(data, notch=1, positions=pos, vert=1)
 
 
-def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None):
+def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
+              legend_labels=None, legend_on_chart=True):
     """histogram of multiple datasets.
     valueses: a list of lists of values"""
     figure = plt.figure()
@@ -173,7 +174,8 @@ def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None):
         colorind += 1
         ax.hist(values,  # histtype = "stepfilled",
                 color=colors[colorind], alpha=0.5, range=myrange, bins=bins)
-
+    if legend_labels:
+        add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels)
     if title:
         ax.set_title(title)
     return figure
