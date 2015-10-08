@@ -38,7 +38,6 @@ def declare_gather_args():
     parser.add_argument('--labels', help='labels for files')
     parser.add_argument('--title', default='', help='chart title')
     parser.add_argument('--outpdf', type=argparse.FileType('w'),
-                        required=True,
                         help='output pdf with venn')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     return parser.parse_args()
@@ -98,13 +97,13 @@ def main():
             linechunks.append(str(overlap))
         print('\t'.join(linechunks))
 
-    mycharts = []
-    mycharts.append(venn.proportional_venn_from_lists(value_sets,
-                                                      title=args.title,
-                                                      labels=labels))
-    charts.write_pdf(mycharts, args.outpdf)
+    if args.outpdf:
+        mycharts = []
+        mycharts.append(venn.proportional_venn_from_lists(value_sets,
+                                                          title=args.title,
+                                                          labels=labels))
+        charts.write_pdf(mycharts, args.outpdf)
     print("Done")
-
 
     logger.debug("End time: %s. Elapsed time: %s" % (datetime.now(), datetime.now() - script_start_time))
 
