@@ -32,13 +32,13 @@ def declare_gather_args():
                         default='percolator q-value')
     parser.add_argument('--maxfdr', help='max FDR to plot', type=float,
                         default=0.5)
+    parser.add_argument('--fdrforcount', help='FDR at which to report counts', type=float,
+                        default=0.01)
     parser.add_argument('--title', help='chart title',
                         default='FDR vs. ID count')
     parser.add_argument('--labels', help='labels for each file')
     parser.add_argument('--outpdf', required=True, type=argparse.FileType('w'),
                         help='output chart')
-    parser.add_argument('--outpoint01counttable', type=argparse.FileType('w'),
-                        help='output table with filenames and counts at .01. This is admittedly corny')
     parser.add_argument('--hidelegend', action="store_true", help='hide the legend')
 
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
@@ -65,6 +65,7 @@ def main():
         else:
             labels = [infile.name for infile in args.infiles]
 
+    counts_at_cutoff = []
     xvalses = []
     yvalses = []
     for infile in args.infiles:
@@ -96,16 +97,16 @@ def main():
                 yvalues.extend([prev_count, len(fdrs_asc)])
         xvalses.append(xvalues)
         yvalses.append(yvalues)
-        if args.outpoint01counttable:
-            count_at_point01 = 0
-            for i in xrange(0, len(xvalues)):
-                if xvalues[i] < 0.01:
-                    count_at_point01 = yvalues[i]
-                else:
-                    break
-            args.outpoint01counttable.write('%s\t%d\n' % (infile.name, count_at_point01))
-    if args.outpoint01counttable:
-        args.outpoint01counttable.close()
+        count_atcutoff = 0
+        for i in xrange(0, len(xvalues)):
+            if xvalues[i] < args.fdrforcount:
+                count_atcutoff = yvalues[i]
+            else:
+                break
+        counts_at_cutoff.append(count_atcutoff)
+    print("Counts at %f" % args. fdrforcount)
+    for i in xrange(0, len(counts_at_cutoff)):
+        print('\t'.join([labels[i], str(counts_at_cutoff[i])]))
 
     mycharts = [charts.multiline(xvalses, yvalses, title=args.title,
                                  xlabel='FDR', ylabel='ID count',

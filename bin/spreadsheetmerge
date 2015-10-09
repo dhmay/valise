@@ -27,11 +27,14 @@ def main():
     parser.add_argument('infile2', type=argparse.FileType('r'),
                         help='input spreadsheet file 2')
     parser.add_argument('mergecolumn', help='column to merge on')
-    parser.add_argument('--plotcolumns', help='columns to plot (comma-separated)')
-    parser.add_argument('--outpdf', type=argparse.FileType('w'),
-                        help='output PDF')
+    parser.add_argument('--plotcolumns', help='columns to plot and/or write (comma-separated)')
+    parser.add_argument('--outpdf', type=argparse.FileType('w'), help='output PDF')
+    parser.add_argument('--outtsv', type=argparse.FileType('w'),
+                        help='output .tsv with plotcolumns for each file (only valid for just one plotcolumn)')
     parser.add_argument('--plotlog', action="store_true",
                         help='log-transform values?')
+    parser.add_argument('--plotxlabel',  help='x label for plot')
+    parser.add_argument('--plotylabel',  help='y label for plot')
     parser.add_argument('--plotneglog10', action="store_true",
                         help='transform values as negative log10?')
     parser.add_argument('--missingindicator', default='NA',
@@ -58,6 +61,8 @@ def main():
 
         assert (args.plotcolumns is not None)
         plotcolumns = args.plotcolumns.split(',')
+    if args.outtsv and len(plotcolumns) != 1:
+        quit("only one plotcolumn allowed with args.outtsv")
 
     common_colvals = list(set(valrowmap1.keys()).intersection(set(valrowmap2.keys())))
     print("Values of %s in common: %d" % (args.mergecolumn, len(common_colvals)))
@@ -69,6 +74,8 @@ def main():
         print("Building charts...")
         mycharts = []
         for plotcolumn in plotcolumns:
+            if args.outtsv:
+                args.outtsv.write('\t'.join([args.mergecolumn, plotcolumn + '_1', plotcolumn + '_2']) + '\n')
             xvals = []
             yvals = []
             n_xvals_plottable = 0
@@ -92,6 +99,7 @@ def main():
 
                     xvals.append(xval)
                     yvals.append(yval)
+                    args.outtsv.write('\t'.join([common_colvals[i], str(xval), str(yval)]) + '\n')
             title = plotcolumn
             xy_cor = np.corrcoef(xvals, yvals)[0, 1]
             print("    %s, r=%f. in 1: %d; in 2: %d; comparable: %d" %
@@ -101,11 +109,18 @@ def main():
             if not args.hidecorrcoef:
                 title = title + " (r=" + ("%.3f" % xy_cor) + ")"
 
-            mycharts.append(charts.scatterplot(xvals, yvals, title=title,
-                                               xlabel=os.path.basename(args.infile1.name),
-                                               ylabel=os.path.basename(args.infile2.name)))
+            xlabel=os.path.basename(args.infile1.name)
+            if args.plotxlabel:
+                xlabel=args.plotxlabel
+            ylabel=os.path.basename(args.infile2.name)
+            if args.plotylabel:
+                ylabel=args.plotylabel
+            mycharts.append(charts.scatterplot(xvals, yvals, title=title, xlabel=xlabel, ylabel=ylabel))
         charts.write_pdf(mycharts, args.outpdf)
         print("Wrote charts to %s" % args.outpdf.name)
+    if args.outtsv:
+        args.outtsv.close()
+        print("Wrote .tsv file %s" % args.outtsv.name)
 
     print("Done.")
 
