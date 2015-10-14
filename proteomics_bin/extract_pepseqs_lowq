@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-extract scan numbers with low Q-values from a percolator psm output file. Write them one per line to a file
+extract peptide sequences from PSMs with low Q-values from a percolator psm output file.
+Write them one per line to a file
 """
 
 import argparse
@@ -15,7 +16,8 @@ __version__ = ""
 
 logger = logging.getLogger(__name__)
 
-MAX_QVALUE = 0.01
+DEFAULT_MAXQ = 0.01
+DEFAULT_PEPSEQ_COL = 'sequence'
 
 def main():
 
@@ -23,7 +25,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('infile', type=argparse.FileType('r'),
                         help='input file')
-    parser.add_argument('outfile', type=argparse.FileType('w'),
+    parser.add_argument('--qvalcol', required=True, help='name of the q-value column')
+    parser.add_argument('--maxq', type=float, default=DEFAULT_MAXQ,
+                        help='maximum q-value')
+    parser.add_argument('--pepseqcol', default=DEFAULT_PEPSEQ_COL, help='name of the peptide sequence column')
+    parser.add_argument('--out', required=True, type=argparse.FileType('w'),
                         help='output file')
 
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
@@ -37,13 +43,16 @@ def main():
         # any module-specific debugging goes below
 
     reader = csv.DictReader(args.infile, delimiter='\t')
-    n_found = 0
+    if args.pepseqcol not in reader.fieldnames:
+        print("Column %s not in available columns: \n%s" % (args.pepseqcol, reader.fieldnames))
+    seqs_to_write = set()
     for row in reader:
-        if float(row['percolator q-value']) < MAX_QVALUE:
-            args.outfile.write(row['sequence'] + '\n')
-            n_found += 1
-    args.outfile.close()
-    print("Done. Wrote %d sequencess" % n_found)
+        if float(row[args.qvalcol]) < args.maxq:
+            seqs_to_write.add(row[args.pepseqcol])
+    for seq in seqs_to_write:
+        args.out.write(seq + '\n')
+    args.out.close()
+    print("Done. Wrote %d sequences" % len(seqs_to_write))
  
     
 

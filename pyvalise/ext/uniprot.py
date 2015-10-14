@@ -7,6 +7,8 @@ import urllib
 import urllib2
 import time
 import sys
+import requests
+import StringIO
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -25,6 +27,14 @@ SECONDARY_STRUCTURE_TYPES = ["helix", "turn", "strand"]
 
 UNIPROT_SERVER = "http://uniprot.org/uniprot"
 
+# batch size for queries. I know for sure 1800 is too big!
+DEFAULT_BATCH_SIZE = 200
+
+
+def make_node_name(raw_node_name):
+    return "{%s}%s" % (UNIPROT_SERVER, raw_node_name)
+
+
 class UniProtClient(object):
 
     def __init__(self, server=UNIPROT_SERVER, reqs_per_sec=20):
@@ -32,6 +42,54 @@ class UniProtClient(object):
         self.reqs_per_sec = reqs_per_sec
         self.req_count = 0
         self.last_req = 0
+
+    def fetch_entries(self, seqids, batch_size=DEFAULT_BATCH_SIZE):
+        """
+        fetch UniprotEntry objects for a bunch of sequences, divided up into batches
+        """
+        seqid_batches = []
+        for i in xrange(0, len(seqids), batch_size):
+            seqid_batches.append(seqids[i:i+batch_size])
+        logger.debug("Splitting %d entries into %d batches of size <= %d" %
+                     (len(seqids), len(seqid_batches), batch_size))
+        entries = []
+        for seqid_batch in seqid_batches:
+            entries.extend(self.fetch_entries_onebatch(seqid_batch))
+        return entries
+
+
+    def fetch_entries_onebatch(self, seqids):
+        """
+        fetch UniprotEntry objects for a bunch of sequences, in one batch
+        """
+        primary_seqids = [s[:6] for s in seqids]
+        logger.debug("Fetching metadata for %d Uniprot IDs from http://uniprot.org ...\n" % len(primary_seqids))
+        r = requests.post(
+            'http://www.uniprot.org/batch/',
+            files={'file': StringIO.StringIO(' '.join(primary_seqids))},
+            params={'format': 'xml',
+                    'columns': 'id,reviewed',
+                    'compress': 'no'
+                    })
+        while 'Retry-After' in r.headers:
+            t = int(r.headers['Retry-After'])
+            logger.debug('Waiting %d\n' % t)
+            time.sleep(t)
+            r = requests.get(r.url)
+        cache_txt = r.text
+
+        root = ET.fromstring(cache_txt)
+        entries = []
+        for entry_xml in root.findall("{" + UNIPROT_SERVER + "}entry"):
+            entries.append(UniprotEntry(entry_xml))
+        return entries
+
+    def fetch_seqid_entry_map(self, seqids):
+        entries = self.fetch_entries(seqids)
+        result = {}
+        for entry in entries:
+            result[entry.accession] = entry
+        return result
 
     def fetch_result(self, uniprot_id):
         hdrs = {}
@@ -102,4 +160,17 @@ class UniProtClient(object):
                 feature_type_stretches_map[feature_type].append((begin_1based, end_1based))
 
         return feature_type_stretches_map, seq_length
+
+
+class UniprotEntry:
+    def __init__(self, xml_entry):
+        self.accession = xml_entry.find(make_node_name('accession')).text
+        self.ncbi_taxonomy_id = None
+        xml_organism = xml_entry.find(make_node_name('organism'))
+        if xml_organism:
+            for dbref_elem in xml_organism.findall(make_node_name("dbReference")):
+                if dbref_elem.get("type") == "NCBI Taxonomy":
+                    self.ncbi_taxonomy_id = int(dbref_elem.get('id'))
+                    break
+
 
