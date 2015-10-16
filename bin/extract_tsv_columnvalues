@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 def main():
     # declare args
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('infile', type=argparse.FileType('r'),
-                        help='input spreadsheet file')
-    parser.add_argument('column', help='column name')
-    parser.add_argument('out', type=argparse.FileType('w'),
+    parser.add_argument('infiles', type=argparse.FileType('r'), nargs='+',
+                        help='input spreadsheet file(s)')
+    parser.add_argument('--column', required=True, help='column name')
+    parser.add_argument('--out', required=True, type=argparse.FileType('w'),
                         help='output file')
     parser.add_argument('--keepmissing', action="store_true", help='Keep missing values')
     parser.add_argument('--missingindicator', default='NA',
@@ -40,20 +40,22 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    reader = csv.DictReader(file_io.BlankCommentCSVFile(args.infile), delimiter=args.delimiter)
-    if args.column not in reader.fieldnames:
-        quit("Column %s not in field names: %s" % (args.column, reader.fieldnames))
     unique_values_written = set()
     n_rows_written = 0
-    for row in reader:
-        valstring = row[args.column]
-        if args.keepmissing or (valstring and valstring != args.missingindicator):
-            if args.unique:
-                if valstring in unique_values_written:
-                    continue
-                unique_values_written.add(valstring)
-            args.out.write(valstring + '\n')
-            n_rows_written += 1
+    for infile in args.infiles:
+        print("Processing input file %s" % infile.name)
+        reader = csv.DictReader(file_io.BlankCommentCSVFile(infile), delimiter=args.delimiter)
+        if args.column not in reader.fieldnames:
+            quit("Column %s not in field names: %s" % (args.column, reader.fieldnames))
+        for row in reader:
+            valstring = row[args.column]
+            if args.keepmissing or (valstring and valstring != args.missingindicator):
+                if args.unique:
+                    if valstring in unique_values_written:
+                        continue
+                    unique_values_written.add(valstring)
+                args.out.write(valstring + '\n')
+                n_rows_written += 1
 
     args.out.close()
     print("Done. Wrote %d rows." % n_rows_written)

@@ -3,7 +3,6 @@
 """Client for getting information from UniProt"""
 
 import logging
-import urllib
 import urllib2
 import time
 import sys
@@ -13,6 +12,9 @@ try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
+
+# requests gets really annoying otherwise
+logging.getLogger("requests").setLevel(logging.WARNING)
 
 
 __author__ = "Damon May"
@@ -165,6 +167,7 @@ class UniProtClient(object):
 class UniprotEntry:
     def __init__(self, xml_entry):
         self.accession = xml_entry.find(make_node_name('accession')).text
+        self.name = xml_entry.find(make_node_name('name')).text
         self.ncbi_taxonomy_id = None
         xml_organism = xml_entry.find(make_node_name('organism'))
         if xml_organism:

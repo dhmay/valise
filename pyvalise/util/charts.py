@@ -181,6 +181,10 @@ def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
     return figure
 
 
+def bar(values, labels, title=None, colors=None, rotate_labels=False):
+    return multibar([values], labels, title=title, colors=colors, legend_labels=None, rotate_labels=rotate_labels)
+
+
 def multibar(valueses, labels, title=None, colors=None,
              legend_labels=None, legend_on_chart=True, rotate_labels=False):
     """barchart of multiple datasets.
@@ -202,7 +206,7 @@ def multibar(valueses, labels, title=None, colors=None,
     plt.xticks(tick_xs, labels)
     if legend_labels:
         ax.set_title(title)
-    add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels, rotate_labels=rotate_labels)
+        add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels, rotate_labels=rotate_labels)
     return figure
 
 
