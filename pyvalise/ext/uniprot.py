@@ -55,20 +55,27 @@ class UniProtClient(object):
         logger.debug("Splitting %d entries into %d batches of size <= %d" %
                      (len(seqids), len(seqid_batches), batch_size))
         entries = []
+        i = 0
         for seqid_batch in seqid_batches:
             entries.extend(self.fetch_entries_onebatch(seqid_batch))
+            i += 1
+            logger.debug("Fetched results for %d of %d entries (cumulative)" % (i * batch_size, len(seqids)))
         return entries
-
 
     def fetch_entries_onebatch(self, seqids):
         """
         fetch UniprotEntry objects for a bunch of sequences, in one batch
         """
-        primary_seqids = [s[:6] for s in seqids]
-        logger.debug("Fetching metadata for %d Uniprot IDs from http://uniprot.org ...\n" % len(primary_seqids))
+        primary_seqids = []
+        for seqid in seqids:
+            if '_' in seqid:
+                primary_seqids.append(seqid[0:seqid.index('_')])
+            else:
+                primary_seqids.append(seqid)
+        logger.debug("Fetching metadata for %d Uniprot IDs from http://uniprot.org ...\n" % len(seqids))
         r = requests.post(
             'http://www.uniprot.org/batch/',
-            files={'file': StringIO.StringIO(' '.join(primary_seqids))},
+            files={'file': StringIO.StringIO(' '.join(seqids))},
             params={'format': 'xml',
                     'columns': 'id,reviewed',
                     'compress': 'no'
@@ -76,11 +83,14 @@ class UniProtClient(object):
         while 'Retry-After' in r.headers:
             t = int(r.headers['Retry-After'])
             logger.debug('Waiting %d\n' % t)
-            time.sleep(t)
+            time.sleep(t+1)
             r = requests.get(r.url)
-        cache_txt = r.text
 
-        root = ET.fromstring(cache_txt)
+        try:
+            root = ET.fromstring(r.text)
+        except UnicodeEncodeError as e:
+            logger.debug("Bad unicode: %s\n%s" % (e, r.text))
+            root = ET.fromstring(r.text.encode('utf-8'))
         entries = []
         for entry_xml in root.findall("{" + UNIPROT_SERVER + "}entry"):
             entries.append(UniprotEntry(entry_xml))
@@ -162,6 +172,37 @@ class UniProtClient(object):
                 feature_type_stretches_map[feature_type].append((begin_1based, end_1based))
 
         return feature_type_stretches_map, seq_length
+
+
+def protid2uniprotaccession(protein):
+    chunks = protein.split('|')
+    if len(chunks) != 3:
+        raise ValueError('Invalid protein ID %s' % protein)
+    uniprot_chunk = chunks[2]
+    if '_' in uniprot_chunk:
+        uniprot_chunk = uniprot_chunk[0:uniprot_chunk.index('_')]
+    return uniprot_chunk
+
+
+def parse_uniprot_xml_file(xml_file):
+    """
+    Parse a whole uniprot xml file with potentially many entries, giving up each entry as we encounter it
+    TODO: this is super hacky. Do it in a more principled way
+    :param xml_file:
+    :return:
+    """
+    header_lines = ['<uniprot xsi:schemaLocation="http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd">']
+    footer_lines = ['</uniprot>']
+    buf = []
+    for line in xml_file:
+        if "<entry >" in line:
+            buf = header_lines[:]
+        buf.append(line)
+        if "</entry>" in line:
+            buf.extend(footer_lines)
+            root = ET.fromstring('\n'.join(buf))
+            entry = root.find("{" + UNIPROT_SERVER + "}entry")
+            yield UniprotEntry(entry)
 
 
 class UniprotEntry:

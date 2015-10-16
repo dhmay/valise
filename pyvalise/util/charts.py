@@ -203,7 +203,10 @@ def multibar(valueses, labels, title=None, colors=None,
     tick_xs = [0] * len(labels)
     for ind in xrange(0, len(tick_xs)):
         tick_xs[ind] = 2 * ind * len(valueses)
-    plt.xticks(tick_xs, labels)
+    locs, ticklabels = plt.xticks(tick_xs, labels)
+    if rotate_labels:
+        logger.debug("Rotating tick labels 90 degrees.")
+        plt.setp(ticklabels, rotation=90)
     if legend_labels:
         ax.set_title(title)
         add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels, rotate_labels=rotate_labels)
