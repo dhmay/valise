@@ -207,6 +207,9 @@ def multibar(valueses, labels, title=None, colors=None,
     if rotate_labels:
         logger.debug("Rotating tick labels 90 degrees.")
         plt.setp(ticklabels, rotation=90)
+        # also, shrink the chart vertically to make room
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.6])
     if legend_labels:
         ax.set_title(title)
         add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels, rotate_labels=rotate_labels)
@@ -336,6 +339,38 @@ def multiscatter(x_valueses, y_valueses, title=None,
     ax.set_aspect(1./ax.get_data_ratio())
     return figure
 
+
+def hexbin(x_values, y_values, title=None,
+           xlabel='', ylabel='', gridsize=100, bins=None,
+           cmap=None, show_colorbar=True,
+           should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
+    """
+    hexbin plot
+    :param x_values:
+    :param y_values:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param gridsize:
+    :param bins:
+    :param cmap:
+    :param show_colorbar:
+    :return:
+    """
+    figure = plt.figure()
+    ax = figure.add_subplot(1, 1, 1)
+    myhexbin = ax.hexbin(x_values, y_values, gridsize=gridsize, bins=bins, cmap=cmap, edgecolors=None, alpha=0.5)
+    if title:
+        ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if should_logx:
+        plt.xscale('log', basex=log_base)
+    if show_colorbar:
+        plt.colorbar(myhexbin)
+    return figure
 
 def scatterplot(x_values, y_values, title=None, lowess=False,
                 xlabel='', ylabel='', pointsize=1, draw_1to1 = False,
