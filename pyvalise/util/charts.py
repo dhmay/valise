@@ -359,7 +359,7 @@ def hexbin(x_values, y_values, title=None,
     """
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
-    myhexbin = ax.hexbin(x_values, y_values, gridsize=gridsize, bins=bins, cmap=cmap, edgecolors=None, alpha=0.5)
+    myhexbin = ax.hexbin(x_values, y_values, gridsize=gridsize, bins=bins, cmap=cmap)
     if title:
         ax.set_title(title)
     ax.set_xlabel(xlabel)
