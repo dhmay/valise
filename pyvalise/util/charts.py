@@ -211,8 +211,8 @@ def multibar(valueses, labels, title=None, colors=None,
         box = ax.get_position()
         ax.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.6])
     if legend_labels:
-        ax.set_title(title)
         add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels, rotate_labels=rotate_labels)
+    ax.set_title(title)
     return figure
 
 
