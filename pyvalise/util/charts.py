@@ -17,6 +17,8 @@ from numpy import arange
 import numpy as np
 
 
+COLORMAP_REDBLUE = plt.get_cmap('bwr')
+
 DEFAULT_LOG_BASE = 10
 ALPHA_FOR_MULTISCATTER = 0.85
 

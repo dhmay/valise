@@ -31,7 +31,7 @@ def declare_gather_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('infiles', type=argparse.FileType('r'), nargs='+',
                         help='input files')
-    parser.add_argument('column', help='column to venn')
+    parser.add_argument('--column', required=True, help='column to venn')
     parser.add_argument('--filtercolumn', help='other column to filter on')
     parser.add_argument('--maxfiltervalue', type=float,
                         help='maximum value of filtercolumn')
@@ -39,6 +39,10 @@ def declare_gather_args():
     parser.add_argument('--title', default='', help='chart title')
     parser.add_argument('--outpdf', type=argparse.FileType('w'),
                         help='output pdf with venn')
+    parser.add_argument('--outunique1', type=argparse.FileType('w'),
+                        help='output file with values unique to the first file')
+    parser.add_argument('--outintersection', type=argparse.FileType('w'),
+                        help='output file with values occuring in every file')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     return parser.parse_args()
 
@@ -103,6 +107,23 @@ def main():
                                                           title=args.title,
                                                           labels=labels))
         charts.write_pdf(mycharts, args.outpdf)
+
+    if args.outunique1:
+        unique1 = set(value_sets[0])
+        for otherset in value_sets[1:len(value_sets)]:
+            unique1.difference_update(otherset)
+        for val in unique1:
+            args.outunique1.write("%s\n" % val)
+        args.outunique1.close()
+        print("Wrote %s values unique to first set to file %s" % (len(unique1), args.outunique1.name))
+    if args.outintersection:
+        inters = set(value_sets[0])
+        for otherset in value_sets[1:len(value_sets)]:
+            inters.intersection_update(otherset)
+        for val in inters:
+            args.outintersection.write("%s\n" % val)
+        args.outintersection.close()
+        print("Wrote %s values that are in all sets to file %s" % (len(inters), args.outintersection.name))
     print("Done")
 
     logger.debug("End time: %s. Elapsed time: %s" % (datetime.now(), datetime.now() - script_start_time))
