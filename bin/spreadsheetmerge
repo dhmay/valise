@@ -59,8 +59,9 @@ def main():
     plotcolumns = None
     if args.outpdf:
         from pyvalise.util import charts
-
         assert (args.plotcolumns is not None)
+
+    if args.plotcolumns:
         plotcolumns = args.plotcolumns.split(',')
     if args.outtsv and len(plotcolumns) != 1:
         quit("only one plotcolumn allowed with args.outtsv")
