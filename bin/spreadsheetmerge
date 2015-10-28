@@ -72,12 +72,22 @@ def main():
     rows1_inorder = [valrowmap1[colval] for colval in common_colvals]
     rows2_inorder = [valrowmap2[colval] for colval in common_colvals]
 
+    if args.outtsv:
+        plotcolumn = plotcolumns[0]
+        args.outtsv.write('\t'.join([args.mergecolumn, plotcolumn + '_1', plotcolumn + '_2']) + '\n')
+        for i in xrange(0, len(rows1_inorder)):
+            xvalstr = rows1_inorder[i][plotcolumn]
+            yvalstr = rows2_inorder[i][plotcolumn]
+            print(rows1_inorder[i])
+            print(rows2_inorder[i])
+            print("argh")
+            args.outtsv.write('\t'.join([rows1_inorder[i][args.mergecolumn], xvalstr, yvalstr]) + '\n')
+    args.outtsv.close()
+
     if args.outpdf:
         print("Building charts...")
         mycharts = []
         for plotcolumn in plotcolumns:
-            if args.outtsv:
-                args.outtsv.write('\t'.join([args.mergecolumn, plotcolumn + '_1', plotcolumn + '_2']) + '\n')
             xvals = []
             yvals = []
             n_xvals_plottable = 0
@@ -101,8 +111,6 @@ def main():
 
                     xvals.append(xval)
                     yvals.append(yval)
-                    if args.outtsv:
-                        args.outtsv.write('\t'.join([common_colvals[i], str(xval), str(yval)]) + '\n')
             title = plotcolumn
             xy_cor = np.corrcoef(xvals, yvals)[0, 1]
             print("    %s, r=%f. in 1: %d; in 2: %d; comparable: %d" %
@@ -123,7 +131,6 @@ def main():
         charts.write_pdf(mycharts, args.outpdf)
         print("Wrote charts to %s" % args.outpdf.name)
     if args.outtsv:
-        args.outtsv.close()
         print("Wrote .tsv file %s" % args.outtsv.name)
 
     print("Done.")
