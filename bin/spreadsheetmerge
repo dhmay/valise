@@ -82,7 +82,7 @@ def main():
             print(rows2_inorder[i])
             print("argh")
             args.outtsv.write('\t'.join([rows1_inorder[i][args.mergecolumn], xvalstr, yvalstr]) + '\n')
-    args.outtsv.close()
+        args.outtsv.close()
 
     if args.outpdf:
         print("Building charts...")
