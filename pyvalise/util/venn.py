@@ -4,6 +4,7 @@
 isn't dependent on charting implementation (currently matplotlib)."""
 
 import logging
+import locale
 import matplotlib
 # so that I can run without X
 matplotlib.use('agg')
@@ -19,6 +20,12 @@ __version__ = ""
 
 log = logging.getLogger(__name__)
 
+
+def format_int(int_to_format):
+    locale.setlocale(locale.LC_ALL, 'en_US')
+    return locale.format("%d", int_to_format, grouping=True)
+
+
 def proportional_venn_from_counts_2d(n_total1, n_total2, n_intersect, title=None, labels=None):
     """
     Create a proportional Venn diagram from counts of two sets' total values and intersection
@@ -31,21 +38,26 @@ def proportional_venn_from_counts_2d(n_total1, n_total2, n_intersect, title=None
     ax = figure.add_subplot(1, 1, 1)
     if not labels:
         labels = [ "Set 1", "Set 2"]
-    c = venn2([n_total1 - n_intersect, n_total2 - n_intersect, n_intersect], set_labels=(labels[0], labels[1]), ax=ax)
+
+    n_1only = n_total1 - n_intersect
+    n_2only = n_total2 - n_intersect
+    c = venn2([n_1only, n_2only, n_intersect], set_labels=(labels[0], labels[1]), ax=ax)
     # hardcode better colors than default
     c.get_patch_by_id('10').set_color('red')
+    c.get_label_by_id('10').set_text(format_int(n_1only))
     c.get_patch_by_id('01').set_color('blue')
+    c.get_label_by_id('01').set_text(format_int(n_2only))
     c.get_patch_by_id('10').set_edgecolor('none')
     c.get_patch_by_id('01').set_edgecolor('none')
     c.get_patch_by_id('10').set_alpha(0.4)
     c.get_patch_by_id('01').set_alpha(0.4)
     c.get_patch_by_id('11').set_color('magenta')
     c.get_patch_by_id('11').set_edgecolor('none')
+    c.get_label_by_id('11').set_text(format_int(n_intersect))
     c.get_patch_by_id('11').set_alpha(0.4)
     if title:
         ax.set_title(title)
     return figure
-
 
 
 def proportional_venn_from_lists(lists, title=None, labels=None):
