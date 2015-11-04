@@ -15,6 +15,8 @@ from pyvalise.util import stats as pyptide_stats
 from scipy.stats import gaussian_kde
 from numpy import arange
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+
 
 
 COLORMAP_REDBLUE = plt.get_cmap('bwr')
@@ -54,7 +56,6 @@ def write_pdf(figures, pdf_file):
     pdf = PdfPages(pdf_file)
     for plot in figures:
         plot.savefig(pdf, format='pdf')
-    pdf.close()
 
 
 def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
@@ -374,6 +375,7 @@ def hexbin(x_values, y_values, title=None,
         plt.colorbar(myhexbin)
     return figure
 
+
 def scatterplot(x_values, y_values, title=None, lowess=False,
                 xlabel='', ylabel='', pointsize=1, draw_1to1 = False,
                 colors=None, cmap=None, show_colorbar=False,
@@ -474,6 +476,53 @@ def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
     if show_colorbar:
         figure.colorbar(cax)
 
+    return figure
+
+
+def surface(x_values, y_values, z_values, title=None,
+            xlabel=None, ylabel=None,
+            should_logx=False, should_logy=False,
+            log_base=DEFAULT_LOG_BASE):
+    """3D surface plot"""
+    figure = plt.figure()
+    ax = figure.gca(projection='3d')
+    ax.plot_surface(x_values, y_values, z_values)
+    if should_logx:
+        plt.xscale('log', basex=log_base)
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if title:
+        ax.set_title(title)
+    return figure
+
+
+def scatter3d(x_values, y_values, z_values, title=None,
+                xlabel='', ylabel='', zlabel='', pointsize=1,
+                colors=None, should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
+    """3D scatterplot"""
+    figure = plt.figure()
+    ax = figure.add_subplot(111, projection='3d')
+    if colors:
+        ax.scatter(x_values, y_values, z_values, s=pointsize, c=colors)
+    else:
+        ax.scatter(x_values, y_values, z_values, s=pointsize)
+
+    if should_logx:
+        plt.xscale('log', basex=log_base)
+    if should_logy:
+        plt.yscale('log', basey=log_base)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if zlabel:
+        ax.set_zlabel(ylabel)
+    if title:
+        ax.set_title(title)
     return figure
 
 

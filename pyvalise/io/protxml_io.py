@@ -12,7 +12,7 @@ import re
 import logging
 
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def parse_attrib(attrib):
@@ -32,8 +32,7 @@ def parse_attrib(attrib):
     return result
 
 
-def read_protxml(prot_xml,
-                 protein_probability_cutoff=None):
+def read_protxml(prot_xml, protein_probability_cutoff=None):
     """Converts a protein.xml file into a list of protein groups.
        Only includes a group if there's at least one protein passing
        protein_probability_cutoff (if specified)
@@ -43,18 +42,21 @@ def read_protxml(prot_xml,
     url = re.search(r"\{.*\}", root.tag).group(0)
 
     if protein_probability_cutoff is not None:
-        log.debug("Protein probability cutoff: %f" % protein_probability_cutoff)
+        logger.debug("Protein probability cutoff: %f" % protein_probability_cutoff)
 
     protxml_groups = list()
     for group_elem in root.findall(url + 'protein_group'):
 
         group_attrs = parse_attrib(group_elem.attrib)
         group = ProtXmlGroup(group_attrs['group_number'], group_attrs['probability'])
-
+        logger.debug('Protein group %d' % group.number)
         for protein_elem in group_elem.findall(url + 'protein'):
             protein_attrs = parse_attrib(protein_elem.attrib)
 
             probability = protein_attrs['probability']
+            percent_coverage = 0.
+            if 'percent_coverage' in protein_attrs:
+                percent_coverage = protein_attrs['percent_coverage']
 
             if protein_probability_cutoff is not None:
                 if probability < protein_probability_cutoff:
@@ -70,6 +72,7 @@ def read_protxml(prot_xml,
                 alt_names.append(alt_protein.attrib['protein_name'])
 
             protein_name = protein_attrs['protein_name']
+            logger.debug("    Protein %s passed cutoff" % protein_name)
 
             peptide_seqs = set()
             for peptide_elem in protein_elem.findall(url + 'peptide'):
@@ -79,6 +82,7 @@ def read_protxml(prot_xml,
             protein = ProtXmlProtein(protein_name, alt_names,
                                              peptide_seqs,
                                              probability,
+                                             percent_coverage,
                                              spectral_count,
                                              description,
                                              protein_attrs['n_indistinguishable_proteins'])
@@ -121,12 +125,13 @@ class ProtXmlGroup:
 class ProtXmlProtein:
     """Stores what we need from a ProtXml protein. Add more as needed"""
 
-    def __init__(self, name, alt_names, peptide_seqs, probability,
+    def __init__(self, name, alt_names, peptide_seqs, probability, percent_coverage,
                  spectral_count, description, n_indistinguishable_proteins):
         self.name = name
         self.alt_names = alt_names
         self.peptide_seqs = peptide_seqs
         self.probability = probability
+        self.percent_coverage = percent_coverage
         self.spectral_count = spectral_count
         self.description = description
         self.n_indistinguishable_proteins = n_indistinguishable_proteins

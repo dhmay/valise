@@ -3,7 +3,7 @@ Valise
 
 My personal toolkit.
 
-## Environment setup
+## Environment setup (Mac)
 
 ### non-Python
 
@@ -12,6 +12,12 @@ My personal toolkit.
     xcode-select --install
 
 Ensure the valise directory is on PYTHONPATH
+
+#### for mayavi 3D charts
+
+install VTK
+
+install mayavi
 
 ### Python
 
