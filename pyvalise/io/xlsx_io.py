@@ -17,6 +17,9 @@ def isfloat(value):
     :param value:
     :return:
     """
+    # if None, don't try to make it a float. This might be ther wrong thing to do
+    if value is None:
+        return False
     try:
         float(value)
         return True
@@ -50,9 +53,13 @@ def write_xlsx(fieldnames, rows, outfilename, should_format_numbers=True):
     for _ in xrange(0, len(fieldnames)):
         values_bycol.append([])
     logger.debug("reading .tsv file...")
+    rowidx = -1
     for row in rows:
+        rowidx += 1
+        logger.debug("row %d" % rowidx)
         for i in xrange(0, len(fieldnames)):
             strval = row[fieldnames[i]]
+            logger.debug("  col %d, val=%s" % (i, strval))
             if not isfloat(strval):
                 colidxs_without_allfloats.add(i)
             values_bycol[i].append(strval)
