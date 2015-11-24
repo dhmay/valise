@@ -8,8 +8,6 @@ on the value of another column.
 import argparse
 import logging
 from datetime import datetime
-from pyvalise.util import venn
-from pyvalise.util import charts
 import csv
 
 __author__ = "Damon May"
@@ -54,7 +52,6 @@ def main():
                         format="%(asctime)s %(levelname)s: %(message)s")
     if args.debug:
         logger.setLevel(logging.DEBUG)
-        venn.logger.setLevel(logging.DEBUG)
         # any module-specific debugging goes below
 
     script_start_time = datetime.now()
@@ -102,6 +99,10 @@ def main():
         print('\t'.join(linechunks))
 
     if args.outpdf:
+        print("Loading graphics modules....")
+        from pyvalise.util import venn
+        venn.logger.setLevel(logging.DEBUG)
+        from pyvalise.util import charts
         mycharts = []
         mycharts.append(venn.proportional_venn_from_lists(value_sets,
                                                           title=args.title,
