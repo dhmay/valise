@@ -1,0 +1,78 @@
+Command line (main)
+*******************
+
+.. argparse::
+    :ref:  align_sequencing_dna
+    :prog: align_sequencing_dna
+.. argparse::
+    :ref:  analyze_hts_vs_expected
+    :prog: analyze_hts_vs_expected
+.. argparse::
+    :ref:  barchart
+    :prog: barchart
+.. argparse::
+    :ref:  build_hts_alignment_script
+    :prog: build_hts_alignment_script
+.. argparse::
+    :ref:  calcfdr
+    :prog: calcfdr
+.. argparse::
+    :ref:  expand_spreadsheet_bycol
+    :prog: expand_spreadsheet_bycol
+.. argparse::
+    :ref:  extract_tsv_columnvalues
+    :prog: extract_tsv_columnvalues
+.. argparse::
+    :ref:  filter_tsv_bycol
+    :prog: filter_tsv_bycol
+.. argparse::
+    :ref:  filter_tsv_byvaluelist
+    :prog: filter_tsv_byvaluelist
+.. argparse::
+    :ref:  hist_bamread_attr
+    :prog: hist_bamread_attr
+.. argparse::
+    :ref:  hist_tsv_column
+    :prog: hist_tsv_column
+.. argparse::
+    :ref:  keep_tsv_columns
+    :prog: keep_tsv_columns
+.. argparse::
+    :ref:  lineplot_fdr_vs_count
+    :prog: lineplot_fdr_vs_count
+.. argparse::
+    :ref:  lineplotspreadsheetcols
+    :prog: lineplotspreadsheetcols
+.. argparse::
+    :ref:  merge_fastas_unique.py
+    :prog: merge_fastas_unique.py
+.. argparse::
+    :ref:  revcomp
+    :prog: revcomp
+.. argparse::
+    :ref:  scatterspreadsheetcols
+    :prog: scatterspreadsheetcols
+.. argparse::
+    :ref:  setcompare
+    :prog: setcompare
+.. argparse::
+    :ref:  sort_tsv_bycol
+    :prog: sort_tsv_bycol
+.. argparse::
+    :ref:  spreadsheetmerge
+    :prog: spreadsheetmerge
+.. argparse::
+    :ref:  summ_bamread_attr
+    :prog: summ_bamread_attr
+.. argparse::
+    :ref:  tsv2mdtable
+    :prog: tsv2mdtable
+.. argparse::
+    :ref:  tsv2xlsx
+    :prog: tsv2xlsx
+.. argparse::
+    :ref:  venn_2d_fromcounts
+    :prog: venn_2d_fromcounts
+.. argparse::
+    :ref:  venn_filecolumns
+    :prog: venn_filecolumns
