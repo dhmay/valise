@@ -10,6 +10,7 @@ from pyvalise.io import csv_io
 import math
 import os
 import numpy as np
+from scipy.stats import mstats
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -26,7 +27,7 @@ def main():
                         help='input spreadsheet file 1')
     parser.add_argument('infile2', type=argparse.FileType('r'),
                         help='input spreadsheet file 2')
-    parser.add_argument('mergecolumn', help='column to merge on')
+    parser.add_argument('--mergecolumn', required=True, help='column to merge on')
     parser.add_argument('--plotcolumns', help='columns to plot and/or write (comma-separated)')
     parser.add_argument('--outpdf', type=argparse.FileType('w'), help='output PDF')
     parser.add_argument('--outtsv', type=argparse.FileType('w'),
@@ -71,6 +72,25 @@ def main():
 
     rows1_inorder = [valrowmap1[colval] for colval in common_colvals]
     rows2_inorder = [valrowmap2[colval] for colval in common_colvals]
+
+    if plotcolumns:
+        for plotcolumn in plotcolumns:
+            print("Column %s" % plotcolumn)
+            vals1 = []
+            vals2 = []
+            for i in xrange(0, len(rows1_inorder)):
+                xvalstr = rows1_inorder[i][plotcolumn]
+                yvalstr = rows2_inorder[i][plotcolumn]
+                if xvalstr and yvalstr:
+                    vals1.append(float(xvalstr))
+                    vals2.append(float(yvalstr))
+            if not vals1:
+                print("   no common values.")
+                continue
+            ratios_1_2 = [vals1[i] / vals2[i] for i in xrange(0, len(vals1))]
+            geomean_1_2 = mstats.gmean(ratios_1_2)
+            print("    Geom mean ratio 1:2 = %f" % geomean_1_2)
+            print("    Geom mean ratio 2:1 = %f" % (1.0 / geomean_1_2))
 
     if args.outtsv:
         plotcolumn = plotcolumns[0]
