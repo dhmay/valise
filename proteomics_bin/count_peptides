@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
-Count the peptide IDs with q<0.01.
-There's some nasty hardcoded junk in here for counting up IDs by different protein databases,
-as deduced by protein name prefixes.
+Count the *unique peptide sequences* identified with q<0.01.
 """
 
 import argparse
