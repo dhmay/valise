@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-A shell of a Python script
+a script to merge two spreadsheets based on a single column and maybe plot or summarize the results
 """
 
 import argparse
@@ -28,6 +28,7 @@ def main():
     parser.add_argument('infile2', type=argparse.FileType('r'),
                         help='input spreadsheet file 2')
     parser.add_argument('--mergecolumn', required=True, help='column to merge on')
+    parser.add_argument('--agreecolumn', help='column to summarize agreement for')
     parser.add_argument('--plotcolumns', help='columns to plot and/or write (comma-separated)')
     parser.add_argument('--outpdf', type=argparse.FileType('w'), help='output PDF')
     parser.add_argument('--outtsv', type=argparse.FileType('w'),
@@ -43,6 +44,7 @@ def main():
                         help='a value that indicates missingness')
     parser.add_argument('--hidecorrcoef', action="store_true",
                         help='hide correlation coefficient in chart?')
+    parser.add_argument('--delimiter', default='\t', help='delimiter between columns')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -52,9 +54,11 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    valrowmap1 = csv_io.load_csv_rowmap_by_col(args.infile1, args.mergecolumn, missing_indicator=args.missingindicator)
+    valrowmap1 = csv_io.load_csv_rowmap_by_col(args.infile1, args.mergecolumn, missing_indicator=args.missingindicator,
+                                               delimiter=args.delimiter)
     print("Values of %s in file %s: %d" % (args.mergecolumn, args.infile1.name, len(valrowmap1)))
-    valrowmap2 = csv_io.load_csv_rowmap_by_col(args.infile2, args.mergecolumn, missing_indicator=args.missingindicator)
+    valrowmap2 = csv_io.load_csv_rowmap_by_col(args.infile2, args.mergecolumn, missing_indicator=args.missingindicator,
+                                               delimiter=args.delimiter)
     print("Values of %s in file %s: %d" % (args.mergecolumn, args.infile2.name, len(valrowmap2)))
 
     plotcolumns = None
@@ -72,6 +76,17 @@ def main():
 
     rows1_inorder = [valrowmap1[colval] for colval in common_colvals]
     rows2_inorder = [valrowmap2[colval] for colval in common_colvals]
+
+    if args.agreecolumn:
+        n_agree = 0
+        n_disagree = 0
+        for i in xrange(0, len(rows1_inorder)):
+            if rows1_inorder[i][args.agreecolumn] == rows2_inorder[i][args.agreecolumn]:
+                n_agree += 1
+            else:
+                n_disagree += 1
+                logger.debug("Disagree! %s, %s" % (rows1_inorder[i][args.agreecolumn], rows2_inorder[i][args.agreecolumn]))
+        print("Agreement of column %s: %d yes, %d no." % (args.agreecolumn, n_agree, n_disagree))
 
     if plotcolumns:
         for plotcolumn in plotcolumns:
