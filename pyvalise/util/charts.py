@@ -5,10 +5,10 @@ isn't dependent on charting implementation (currently matplotlib)."""
 
 import matplotlib
 # so that I can run without X
-matplotlib.use('agg')
+matplotlib.use('Agg')
 import logging
 from matplotlib.backends.backend_pdf import PdfPages
-import pylab as plt
+import matplotlib.pyplot as plt
 from statsmodels.graphics import gofplots
 import statsmodels.api as sm
 from pyvalise.util import stats as pyptide_stats
@@ -53,9 +53,9 @@ piechart_valuesum = 0
 
 def write_pdf(figures, pdf_file):
     """write an iterable of figures to a PDF"""
-    pdf = PdfPages(pdf_file)
-    for plot in figures:
-        plot.savefig(pdf, format='pdf')
+    with PdfPages(pdf_file) as pdf:
+        for plot in figures:
+            plot.savefig(pdf, format='pdf')
 
 
 def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
@@ -344,7 +344,7 @@ def multiscatter(x_valueses, y_valueses, title=None,
 
 
 def hexbin(x_values, y_values, title=None,
-           xlabel='', ylabel='', gridsize=100, bins=None,
+           xlabel='', ylabel='', gridsize=100, should_log_color=False,
            cmap=None, show_colorbar=True,
            should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
     """
@@ -355,14 +355,18 @@ def hexbin(x_values, y_values, title=None,
     :param xlabel:
     :param ylabel:
     :param gridsize:
-    :param bins:
+    :param should_log_color: log-transform the color scale?
     :param cmap:
     :param show_colorbar:
     :return:
     """
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
-    myhexbin = ax.hexbin(x_values, y_values, gridsize=gridsize, bins=bins, cmap=cmap)
+    bins = None
+    if should_log_color:
+        bins = 'log'
+    myhexbin = ax.hexbin(x_values, y_values, gridsize=gridsize, # bins=bins,
+                         cmap=cmap)
     if title:
         ax.set_title(title)
     ax.set_xlabel(xlabel)

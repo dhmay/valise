@@ -25,7 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('infile', type=argparse.FileType('r'),
                         help='input spreadsheet file')
-    parser.add_argument('outpdf', type=argparse.FileType('w'),
+    parser.add_argument('--outpdf', type=argparse.FileType('w'),
                         help='output PDF')
     parser.add_argument('--columns', help='column to histogram (if not supplied, all possible columns')
     parser.add_argument('--plotlog', action="store_true",
@@ -71,16 +71,18 @@ def main():
     for column in col_values_map:
         print("Values of %s: %d" % (column, len(col_values_map[column])))
 
-    mycharts = []
-    for column in col_values_map:
-        values = col_values_map[column]
-        if not values:
-            continue
-        if args.plotlog:
-            values = [math.log(value) for value in values]
-        mycharts.append(charts.hist(values, column, bins=args.bins))
-    charts.write_pdf(mycharts, args.outpdf)
-    print("Wrote charts to %s" % args.outpdf.name)
+    if args.outpdf:
+        mycharts = []
+        for column in col_values_map:
+            values = col_values_map[column]
+            if not values:
+                continue
+            if args.plotlog:
+                values = [math.log(value) for value in values]
+            mycharts.append(charts.hist(values, column, bins=args.bins))
+
+        charts.write_pdf(mycharts, args.outpdf)
+        print("Wrote charts to %s" % args.outpdf.name)
 
 
 start_time = datetime.now()

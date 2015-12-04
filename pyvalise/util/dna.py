@@ -59,6 +59,13 @@ def forward_translate_dna_threeframes(dna_sequence, stop_before_stop=False):
     return result
 
 
+def forward_translate_dna_sixframes(dna_sequence, stop_before_stop=False):
+    """forward-translate the DNA sequence in Frames 1,2,3,4,5,6"""
+    result = forward_translate_dna_threeframes(dna_sequence)
+    result.extend(forward_translate_dna_threeframes(reverse_complement(dna_sequence)))
+    return result
+
+
 def reverse_complement(dna_sequence):
     return complement(reverse(dna_sequence))
 

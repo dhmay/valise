@@ -113,9 +113,6 @@ def main():
         for i in xrange(0, len(rows1_inorder)):
             xvalstr = rows1_inorder[i][plotcolumn]
             yvalstr = rows2_inorder[i][plotcolumn]
-            print(rows1_inorder[i])
-            print(rows2_inorder[i])
-            print("argh")
             args.outtsv.write('\t'.join([rows1_inorder[i][args.mergecolumn], xvalstr, yvalstr]) + '\n')
         args.outtsv.close()
 
