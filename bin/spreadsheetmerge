@@ -11,6 +11,7 @@ import math
 import os
 import numpy as np
 from scipy.stats import mstats
+import csv
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -30,9 +31,12 @@ def main():
     parser.add_argument('--mergecolumn', required=True, help='column to merge on')
     parser.add_argument('--agreecolumn', help='column to summarize agreement for')
     parser.add_argument('--plotcolumns', help='columns to plot and/or write (comma-separated)')
+    parser.add_argument('--annotcolumns', help='columns for annotated spreadsheet --outannottsv (comma-separated)')
     parser.add_argument('--outpdf', type=argparse.FileType('w'), help='output PDF')
-    parser.add_argument('--outtsv', type=argparse.FileType('w'),
+    parser.add_argument('--outplottsv', type=argparse.FileType('w'),
                         help='output .tsv with plotcolumns for each file (only valid for just one plotcolumn)')
+    parser.add_argument('--outannottsv', type=argparse.FileType('w'),
+                        help='output .tsv with annotcolumns from second file where present')
     parser.add_argument('--plotlog', action="store_true",
                         help='log-transform values?')
     parser.add_argument('--plotxlabel',  help='x label for plot')
@@ -54,6 +58,8 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
+    file1_fieldnames = csv.DictReader(args.infile1, delimiter=args.delimiter).fieldnames
+    args.infile1 = file(args.infile1.name)
     valrowmap1 = csv_io.load_csv_rowmap_by_col(args.infile1, args.mergecolumn, missing_indicator=args.missingindicator,
                                                delimiter=args.delimiter)
     print("Values of %s in file %s: %d" % (args.mergecolumn, args.infile1.name, len(valrowmap1)))
@@ -68,8 +74,15 @@ def main():
 
     if args.plotcolumns:
         plotcolumns = args.plotcolumns.split(',')
-    if args.outtsv and len(plotcolumns) != 1:
-        quit("only one plotcolumn allowed with args.outtsv")
+    if args.outplottsv and len(plotcolumns) != 1:
+        quit("only one plotcolumn allowed with args.outplottsv")
+
+    annotcolumns = None
+    if args.annotcolumns:
+        annotcolumns = args.annotcolumns.split(',')
+        assert(args.outannottsv)
+    if args.outannottsv:
+        assert(args.annotcolumns)
 
     common_colvals = list(set(valrowmap1.keys()).intersection(set(valrowmap2.keys())))
     print("Values of %s in common: %d" % (args.mergecolumn, len(common_colvals)))
@@ -107,14 +120,36 @@ def main():
             print("    Geom mean ratio 1:2 = %f" % geomean_1_2)
             print("    Geom mean ratio 2:1 = %f" % (1.0 / geomean_1_2))
 
-    if args.outtsv:
+    if args.outplottsv:
         plotcolumn = plotcolumns[0]
-        args.outtsv.write('\t'.join([args.mergecolumn, plotcolumn + '_1', plotcolumn + '_2']) + '\n')
+        args.outplottsv.write('\t'.join([args.mergecolumn, plotcolumn + '_1', plotcolumn + '_2']) + '\n')
         for i in xrange(0, len(rows1_inorder)):
             xvalstr = rows1_inorder[i][plotcolumn]
             yvalstr = rows2_inorder[i][plotcolumn]
-            args.outtsv.write('\t'.join([rows1_inorder[i][args.mergecolumn], xvalstr, yvalstr]) + '\n')
-        args.outtsv.close()
+            args.outplottsv.write('\t'.join([rows1_inorder[i][args.mergecolumn], xvalstr, yvalstr]) + '\n')
+        args.outplottsv.close()
+
+    if args.outannottsv:
+        print("Writing annotation file...")
+        annotfile_columns = file1_fieldnames[:]
+        for annotcolumn in annotcolumns:
+            if annotcolumn in annotfile_columns:
+                quit("Error! Annot column %s is present in original file. Quitting." % annotcolumn)
+            annotfile_columns.append(annotcolumn)
+        args.outannottsv.write("\t".join(annotfile_columns) + '\n')
+        for i in xrange(0, len(rows1_inorder)):
+            row_values = [rows1_inorder[i][col] for col in file1_fieldnames]
+            for i in xrange(0, len(row_values)):
+                if row_values[i] is None:
+                    row_values[i] = ''
+            for annotcolumn in annotcolumns:
+                val = ''
+                if rows2_inorder[i][annotcolumn] and rows2_inorder[i][annotcolumn] != args.missingindicator:
+                    val = rows2_inorder[i][annotcolumn]
+                row_values.append(val)
+            args.outannottsv.write("\t".join(row_values) + '\n')
+        args.outannottsv.close()
+        print("Wrote annotation file %s" % args.outannottsv.name)
 
     if args.outpdf:
         print("Building charts...")
@@ -162,8 +197,8 @@ def main():
                                                draw_1to1=args.plotabline))
         charts.write_pdf(mycharts, args.outpdf)
         print("Wrote charts to %s" % args.outpdf.name)
-    if args.outtsv:
-        print("Wrote .tsv file %s" % args.outtsv.name)
+    if args.outplottsv:
+        print("Wrote .tsv file %s" % args.outplottsv.name)
 
     print("Done.")
 
