@@ -29,6 +29,7 @@ def main():
     parser.add_argument('infile2', type=argparse.FileType('r'),
                         help='input spreadsheet file 2')
     parser.add_argument('--mergecolumn', required=True, help='column to merge on')
+    parser.add_argument('--mergecolumn2', help='column to merge on, as named in file 2 (if not same as file 1)')
     parser.add_argument('--agreecolumn', help='column to summarize agreement for')
     parser.add_argument('--plotcolumns', help='columns to plot and/or write (comma-separated)')
     parser.add_argument('--annotcolumns', help='columns for annotated spreadsheet --outannottsv (comma-separated)')
@@ -63,9 +64,12 @@ def main():
     valrowmap1 = csv_io.load_csv_rowmap_by_col(args.infile1, args.mergecolumn, missing_indicator=args.missingindicator,
                                                delimiter=args.delimiter)
     print("Values of %s in file %s: %d" % (args.mergecolumn, args.infile1.name, len(valrowmap1)))
-    valrowmap2 = csv_io.load_csv_rowmap_by_col(args.infile2, args.mergecolumn, missing_indicator=args.missingindicator,
+    mergecolumn2 = args.mergecolumn
+    if args.mergecolumn2:
+        mergecolumn2 = args.mergecolumn2
+    valrowmap2 = csv_io.load_csv_rowmap_by_col(args.infile2, mergecolumn2, missing_indicator=args.missingindicator,
                                                delimiter=args.delimiter)
-    print("Values of %s in file %s: %d" % (args.mergecolumn, args.infile2.name, len(valrowmap2)))
+    print("Values of %s in file %s: %d" % (mergecolumn2, args.infile2.name, len(valrowmap2)))
 
     plotcolumns = None
     if args.outpdf:
