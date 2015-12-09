@@ -36,7 +36,7 @@ def calc_nt_proportion_map(dna_sequences):
         result[nt] /= grandtotal
     return result
 
-def forward_translate_dna_oneframe(dna_sequence, stop_before_stop=False):
+def forward_translate_dna_firstframe(dna_sequence, stop_before_stop=False):
     """forward-translate the DNA sequence in Frame 1.
     If stop_before_stop, end with the last AA before the first in-frame stop codon"""
     verify_is_dna(dna_sequence)
@@ -51,16 +51,33 @@ def forward_translate_dna_oneframe(dna_sequence, stop_before_stop=False):
     return result
 
 
+def forward_translate_dna_oneframe(dna_sequence, frame, stop_before_stop=False):
+    """
+    Frames are 0-based, 0-5
+    :param dna_sequence:
+    :param frame:
+    :param stop_before_stop:
+    :return:
+    """
+    if frame < 0 or frame > 5:
+        raise ValueError('forward_translate_dna_oneframe with invalid frame %d' % frame)
+    seq_to_translate = dna_sequence
+    if frame > 2:
+        seq_to_translate = reverse_complement(dna_sequence)
+    frame %= 3
+    if frame > 0:
+        seq_to_translate = seq_to_translate[frame:]
+    return forward_translate_dna_firstframe(seq_to_translate, stop_before_stop=stop_before_stop)
+
+
 def forward_translate_dna_threeframes(dna_sequence, stop_before_stop=False):
-    """forward-translate the DNA sequence in Frame 1,2,3"""
-    result = list([forward_translate_dna_oneframe(dna_sequence, stop_before_stop=stop_before_stop)])
-    result.append(forward_translate_dna_oneframe(dna_sequence[1:], stop_before_stop=stop_before_stop))
-    result.append(forward_translate_dna_oneframe(dna_sequence[2:], stop_before_stop=stop_before_stop))
-    return result
+    """forward-translate the DNA sequence in Frame 0,1,2"""
+    return [forward_translate_dna_oneframe(dna_sequence, frame, stop_before_stop=stop_before_stop)
+            for frame in xrange(0, 2)]
 
 
 def forward_translate_dna_sixframes(dna_sequence, stop_before_stop=False):
-    """forward-translate the DNA sequence in Frames 1,2,3,4,5,6"""
+    """forward-translate the DNA sequence in Frames 0,1,2,3,4,5"""
     result = forward_translate_dna_threeframes(dna_sequence)
     result.extend(forward_translate_dna_threeframes(reverse_complement(dna_sequence)))
     return result

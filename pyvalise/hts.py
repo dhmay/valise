@@ -508,7 +508,7 @@ def infer_fastq_proteins(fastq_filepath,
         n_had_startseq += 1
         seq_coding_to_end = aread.sequence[aread.sequence.index(coding_startseq):]
         try:
-            protein_seq = dna.forward_translate_dna_oneframe(seq_coding_to_end,
+            protein_seq = dna.forward_translate_dna_firstframe(seq_coding_to_end,
                                                              stop_before_stop=True)
         except Exception:
             continue
@@ -812,7 +812,7 @@ class HTSLibraryAnalysis:
         readcounts = list()
         for obscodingseq in self.observed_codingseqs:
             if obscodingseq.readcount >= min_readcount and obscodingseq.readcount <= max_readcount:
-                readcounts.append(len(dna.forward_translate_dna_oneframe(obscodingseq.sequence, stop_before_stop=True)))
+                readcounts.append(len(dna.forward_translate_dna_firstframe(obscodingseq.sequence, stop_before_stop=True)))
         if len(readcounts) > 2:
             return charts.hist(readcounts,
                                "Coded protein lengths, " + str(min_readcount) + " to " + str(max_readcount) + " reads")
@@ -832,7 +832,7 @@ class HTSLibraryAnalysis:
         for obscodingseq in self.observed_codingseqs:
             if obscodingseq.readcount < min_reads:
                 continue
-            proteinseq = dna.forward_translate_dna_oneframe(obscodingseq.sequence, True)
+            proteinseq = dna.forward_translate_dna_firstframe(obscodingseq.sequence, True)
             if proteinseq in protein_seqs or len(proteinseq) < min_length:
                 continue
             protein_seqs.add(proteinseq)
@@ -844,7 +844,7 @@ class HTSLibraryAnalysis:
             protein_name = 'unknown_' + proteinseq
             if obscodingseq.has_refseq:
                 protein_name = obscodingseq.refseq_name
-                if proteinseq != dna.forward_translate_dna_oneframe(obscodingseq.refseq_sequence):
+                if proteinseq != dna.forward_translate_dna_firstframe(obscodingseq.refseq_sequence):
                     protein_name = "corrupted_" + protein_name + "_" + proteinseq
 
             result.append(proteins.Protein(protein_name, proteinseq))
@@ -855,7 +855,7 @@ class HTSLibraryAnalysis:
         """build a map from protein sequences to read counts"""
         result = dict()
         for obscodingseq in self.observed_codingseqs:
-            proteinseq = dna.forward_translate_dna_oneframe(obscodingseq.sequence)
+            proteinseq = dna.forward_translate_dna_firstframe(obscodingseq.sequence)
             if proteinseq in result:
                 result[proteinseq] = max(obscodingseq.readcount, result[proteinseq])
             else:
@@ -906,7 +906,7 @@ class HTSLibraryAnalysis:
         result = set()
         for obscodingseq in self.observed_codingseqs:
             if obscodingseq.readcount >= min_readcount:
-                proteinseq = dna.forward_translate_dna_oneframe(obscodingseq.sequence, True)
+                proteinseq = dna.forward_translate_dna_firstframe(obscodingseq.sequence, True)
                 if len(proteinseq) >= min_proteinlength and len(proteinseq) <= max_proteinlength:
                     result.add(proteinseq)
         return result

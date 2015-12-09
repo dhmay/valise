@@ -42,6 +42,8 @@ def declare_gather_args():
                         help='output file with values unique to the first file')
     parser.add_argument('--outintersection', type=argparse.FileType('w'),
                         help='output file with values occuring in every file')
+    parser.add_argument('--percolatorqpoint01', action="store_true",
+                        help='set "filtercolumn" to "percolator\ q-value" and "maxfiltervalue" to 0.01')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     return parser.parse_args()
 
@@ -57,6 +59,12 @@ def main():
 
     script_start_time = datetime.now()
     logger.debug("Start time: %s" % script_start_time)
+
+    # special handling for comparing with percolator q-value = 0.01
+    if args.percolatorqpoint01:
+        assert not args.filtercolumn and not args.maxfiltervalue
+        args.filtercolumn = 'percolator q-value'
+        args.maxfiltervalue = 0.01
 
     if args.filtercolumn:
         assert args.maxfiltervalue
