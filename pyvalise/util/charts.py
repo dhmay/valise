@@ -14,8 +14,8 @@ import statsmodels.api as sm
 from pyvalise.util import stats as pyptide_stats
 from scipy.stats import gaussian_kde
 from numpy import arange
+from matplotlib import colors
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 
 
 
@@ -23,6 +23,8 @@ COLORMAP_REDBLUE = plt.get_cmap('bwr')
 
 DEFAULT_LOG_BASE = 10
 ALPHA_FOR_MULTISCATTER = 0.85
+
+DEFAULT_POINTSIZE = 1
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2012-2014 Damon May"
@@ -43,6 +45,8 @@ BASE_COLORS = ['#0000ff',  # blue
 COLORS = []
 for i in xrange(0, 20):
     COLORS.extend(BASE_COLORS)
+
+COLORMAP_BASECOLORS = colors.ListedColormap(BASE_COLORS)
 
 
 DEFAULT_HIST_BINS = 40
@@ -300,9 +304,10 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
 
 
 def multiscatter(x_valueses, y_valueses, title=None,
-                 xlabel='', ylabel='', pointsize=1, labels=None,
+                 xlabel='', ylabel='', pointsize=DEFAULT_POINTSIZE, labels=None,
                  should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-                 legend_on_chart=False, colors=COLORS, rotate_labels=False):
+                 legend_on_chart=False, colors=COLORS, rotate_labels=False,
+                 draw_1to1=False):
     """
     Scatterplot multiple sets of values in different colors
     :param x_valueses:
@@ -339,6 +344,14 @@ def multiscatter(x_valueses, y_valueses, title=None,
         plt.yscale('log', basey=log_base)
     if should_logx:
         plt.xscale('log', basex=log_base)
+    if draw_1to1:
+        lims = [
+            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+        ]
+        ax.plot(lims, lims, 'k-', alpha=0.75, zorder=0)
+        ax.set_xlim(lims)
+        ax.set_ylim(lims)
     ax.set_aspect(1./ax.get_data_ratio())
     return figure
 

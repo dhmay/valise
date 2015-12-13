@@ -143,9 +143,9 @@ def main():
         args.outannottsv.write("\t".join(annotfile_columns) + '\n')
         for i in xrange(0, len(rows1_inorder)):
             row_values = [rows1_inorder[i][col] for col in file1_fieldnames]
-            for i in xrange(0, len(row_values)):
-                if row_values[i] is None:
-                    row_values[i] = ''
+            for j in xrange(0, len(row_values)):
+                if row_values[j] is None:
+                    row_values[j] = ''
             for annotcolumn in annotcolumns:
                 val = ''
                 if rows2_inorder[i][annotcolumn] and rows2_inorder[i][annotcolumn] != args.missingindicator:
