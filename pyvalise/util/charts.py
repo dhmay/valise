@@ -365,7 +365,7 @@ def hexbin(x_values, y_values, title=None,
     bins = None
     if should_log_color:
         bins = 'log'
-    myhexbin = ax.hexbin(x_values, y_values, gridsize=gridsize, # bins=bins,
+    myhexbin = ax.hexbin(x_values, y_values, gridsize=gridsize, bins=bins,
                          cmap=cmap)
     if title:
         ax.set_title(title)
