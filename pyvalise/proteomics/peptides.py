@@ -10,7 +10,6 @@ from pyteomics import mass as pyteomics_mass
 from pyteomics import achrom
 from pyteomics import electrochem
 from pyteomics import mass as massUtil
-from pyvalise.util import charts
 from numpy import median
 
 import re
@@ -564,35 +563,6 @@ def count_cysteines_in_pepseqs(pepseqs):
     return result
 
 
-def lineplot_tryptic_cyscounts_in_protlists(proteinseq_lists, labels, minlength=7, maxlength=35):
-    """
-    Build a line plot of the proportion of tryptic peptides for each count
-    of Cysteines within the peptide, one line for each of multiple lists
-    of protein sequences.
-    Example:
-    peptides.lineplot_tryptic_cyscounts_in_protlists([["CCCCRCCRCRCRCCCRCCCCCCCCCRCR"]],["only"]).show()
-    """
-    x_valueses = list()
-    y_valueses = list()
-
-    for proteinseq_list in proteinseq_lists:
-        tryp_pep_seqs = list()
-        for proteinseq in proteinseq_list:
-            prot_tryppeps = pyparser.cleave(proteinseq,
-                                            pyparser.expasy_rules["trypsin"],
-                                            0)
-            for tryppep in prot_tryppeps:
-                if minlength <= len(tryppep) <= maxlength:
-                    tryp_pep_seqs.append(tryppep)
-        print("Loaded %d tryptic peptides from protein list." % len(tryp_pep_seqs))
-        y_values = count_cysteines_in_pepseqs(tryp_pep_seqs)
-        sumy = float(sum(y_values))
-        for i in xrange(0, len(y_values)):
-            y_values[i] = float(y_values[i]) / sumy
-        x_values = range(0, len(y_values))
-        x_valueses.append(x_values)
-        y_valueses.append(y_values)
-    return charts.multiline(x_valueses, y_valueses, labels, "% tryptic peptides with # Cs")
 
 
 # modifications corresponding to iodoacetamide and variable ox methionine
