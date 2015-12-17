@@ -578,3 +578,71 @@ def add_legend_to_chart(ax, legend_on_chart=False, labels=None, rotate_labels=Fa
 
     for label in legend.get_lines():
         label.set_linewidth(1.5)  # the legend line width
+
+
+def big_hist_line(big_hist_data, xlabel='', ylabel=None, title='', plot_proportion=False):
+    """
+
+    :param big_hist_data:
+    :param xlabel:
+    :param ylabel:
+    :param title:
+    :param plot_proportion:
+    :return:
+    """
+    return big_hist_multiline([big_hist_data], xlabel=xlabel, ylabel=ylabel, title=title,
+                              plot_proportion=plot_proportion)
+
+
+def big_hist_multiline(big_hist_datas, xlabel='', ylabel=None, title='', labels=None, plot_proportion=False):
+    """
+    Plot a multi-line plot from BigHistData data objects. Assumes min_value and max_value are same for
+    all the inputs
+    :param big_hist_datas:
+    :param xlabel:
+    :param ylabel:
+    :param title:
+    :param labels:
+    :param plot_proportion
+    :return:
+    """
+    xvalues = big_hist_datas[0].generate_xvals()
+    xvalueses = []
+    yvalueses = []
+    if not ylabel:
+        if plot_proportion:
+            ylabel = 'proportion'
+        else:
+            ylabel = 'count'
+    for big_hist_data in big_hist_datas:
+        xvalueses.append(xvalues)
+        yvalues = big_hist_data.countdata
+        if plot_proportion:
+            yvalues = big_hist_data.generate_proportion_yvals()
+        yvalueses.append(yvalues)
+    return multiline(xvalueses, yvalueses, title=title, xlabel=xlabel, ylabel=ylabel, labels=labels)
+
+
+class BigHistData:
+    """
+    A data structure for storing count data for big datasets, to be plotted as a line or multiline plot
+    """
+    def __init__(self, max_value, min_value=0):
+        assert(max_value > min_value)
+        self.min_value = min_value
+        self.max_value = max_value
+        self.countdata = [0] * (max_value - min_value + 1)
+
+    def add_value(self, value):
+        value = max(self.min_value, min(value, self.max_value))
+        self.countdata[value - self.min_value] += 1
+
+    def generate_xvals(self):
+        return xrange(self.min_value, self.max_value+1)
+
+    def generate_proportion_yvals(self):
+        value_sum = sum(self.countdata)
+        proportion_yvals = self.countdata
+        if value_sum > 0:
+            proportion_yvals = [float(y) / value_sum for y in self.countdata]
+        return proportion_yvals
