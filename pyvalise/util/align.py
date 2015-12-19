@@ -141,7 +141,43 @@ def read_alignments_from_file(infile):
 def remove_sequence_gaps(seq):
     return ''.join(seq.split('-'))
 
-    
+
+def slide_align_perfect(query_seq, ref_seq, match_base_score=1):
+    """
+    Perform a sliding-only alignment (no gaps) and return the alignment with the longest perfect agreement,
+    or None if there is none
+    :param query_seq:
+    :param ref_seq:
+    :return:
+    """
+    max_perfect_overlap = 0
+    max_perfect_overlap_offset = 0
+    # ref_seq_offset is the offset between the first position in ref_seq and the first position in query_seq
+    for ref_seq_offset in xrange(-len(ref_seq) + 1, len(query_seq) - 1):
+        has_mismatch = False
+        n_overlap_bases = 0
+        for overlap_position in xrange(max(0, ref_seq_offset), min(len(query_seq), ref_seq_offset + len(ref_seq))):
+            if query_seq[overlap_position] != ref_seq[overlap_position - ref_seq_offset]:
+                has_mismatch = True
+                break
+            n_overlap_bases += 1
+        if not has_mismatch:
+            perfect_overlap = n_overlap_bases
+            if perfect_overlap > max_perfect_overlap:
+                max_perfect_overlap = perfect_overlap
+                max_perfect_overlap_offset = ref_seq_offset
+    if max_perfect_overlap == 0:
+        return None
+    ndashes_before_1 = max(0, -max_perfect_overlap_offset)
+    ndashes_after_1 = max(0, max_perfect_overlap_offset + len(ref_seq) - len(query_seq))
+    alignedseq_1 = ''.join(['-'] * ndashes_before_1) + query_seq + ''.join(['-'] * ndashes_after_1)
+    ndashes_before_2 = max(0, max_perfect_overlap_offset)
+    ndashes_after_2 = max(0, -max_perfect_overlap_offset + len(query_seq) - len(ref_seq))
+    alignedseq_2 = ''.join(['-'] * ndashes_before_2) + ref_seq + ''.join(['-'] * ndashes_after_2)
+    return alignedseq_1, alignedseq_2, match_base_score * max_perfect_overlap
+
+
+
     
     
         
