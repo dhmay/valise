@@ -142,13 +142,13 @@ def remove_sequence_gaps(seq):
     return ''.join(seq.split('-'))
 
 
-def slide_align_perfect(query_seq, ref_seq, match_base_score=1):
+def slide_align_fullref(query_seq, ref_seq, match_base_score=2, mismatch_penalty=-1):
     """
-    Perform a sliding-only alignment (no gaps) and return the alignment with the longest perfect agreement,
-    or None if there is none
+    Perform a sliding-only alignment (no gaps) and return the offset and score with the best agreement,
+    or None if there is none. Require the full reference to be contained in query
     :param query_seq:
     :param ref_seq:
-    :return:
+    :return: a tuple of (offset, score)
     """
     max_perfect_overlap = 0
     max_perfect_overlap_offset = 0
