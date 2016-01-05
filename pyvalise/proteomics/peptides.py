@@ -292,12 +292,25 @@ class PeptideIdentification:
         return "PeptideIdentification: %s, prob=%f" % (self.sequence,
                                                        self.probability)
 
+
 def calc_peptide_missed_cleavages(pepseq):
-    fully_tryptic_peps = pyparser.cleave(pepseq,
-                                         pyparser.expasy_rules["trypsin"],
-                                         0)
+    """
+    Count the missed cleavages in a peptide sequence
+    :param pepseq:
+    :return:
+    """
+    fully_tryptic_peps = calc_tryptic_peptides(pepseq, 0)
     return len(fully_tryptic_peps) - 1
 
+
+def calc_tryptic_peptides(proteinseq, n_missed_cleavages):
+    """
+    Trypsinize, returning an unordered list of all peptide sequences with <= n_missed_cleavages
+    :param proteinseq:
+    :param n_missed_cleavages:
+    :return:
+    """
+    return pyparser.cleave(proteinseq, pyparser.expasy_rules["trypsin"], missed_cleavages=n_missed_cleavages)
 
 
 class AminoacidModification:

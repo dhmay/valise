@@ -73,7 +73,7 @@ def forward_translate_dna_oneframe(dna_sequence, frame, stop_before_stop=False):
 def forward_translate_dna_threeframes(dna_sequence, stop_before_stop=False):
     """forward-translate the DNA sequence in Frame 0,1,2"""
     return [forward_translate_dna_oneframe(dna_sequence, frame, stop_before_stop=stop_before_stop)
-            for frame in xrange(0, 2)]
+            for frame in xrange(0, 3)]
 
 
 def forward_translate_dna_sixframes(dna_sequence, stop_before_stop=False):
