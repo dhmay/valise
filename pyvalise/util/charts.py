@@ -596,8 +596,8 @@ def big_hist_line(big_hist_data, xlabel='', ylabel=None, title='', plot_proporti
 
 def big_hist_multiline(big_hist_datas, xlabel='', ylabel=None, title='', labels=None, plot_proportion=False):
     """
-    Plot a multi-line plot from BigHistData data objects. Assumes min_value and max_value are same for
-    all the inputs
+    Plot a multi-line plot from BigHistData data objects.
+    Requires min_shown_value and max_shown_value are same for all the inputs
     :param big_hist_datas:
     :param xlabel:
     :param ylabel:
@@ -606,6 +606,8 @@ def big_hist_multiline(big_hist_datas, xlabel='', ylabel=None, title='', labels=
     :param plot_proportion
     :return:
     """
+    assert(len(set([big_hist_data.min_shown_value for big_hist_data in big_hist_datas])) == 1)
+    assert(len(set([big_hist_data.max_shown_value for big_hist_data in big_hist_datas])) == 1)
     xvalues = big_hist_datas[0].generate_xvals()
     xvalueses = []
     yvalueses = []
@@ -627,18 +629,22 @@ class BigHistData:
     """
     A data structure for storing count data for big datasets, to be plotted as a line or multiline plot
     """
-    def __init__(self, max_value, min_value=0):
-        assert(max_value > min_value)
-        self.min_value = min_value
-        self.max_value = max_value
-        self.countdata = [0] * (max_value - min_value + 1)
+    def __init__(self, max_shown_value, min_shown_value=0):
+        assert(max_shown_value > min_shown_value)
+        self.min_shown_value = min_shown_value
+        self.max_shown_value = max_shown_value
+        self.countdata = [0] * (max_shown_value - min_shown_value + 1)
+        self.min_real_value = float('inf')
+        self.max_real_value = float('-inf')
 
     def add_value(self, value):
-        value = max(self.min_value, min(value, self.max_value))
-        self.countdata[value - self.min_value] += 1
+        cropped_value = max(self.min_shown_value, min(value, self.max_shown_value))
+        self.countdata[cropped_value - self.min_shown_value] += 1
+        self.min_real_value = min(value, self.min_real_value)
+        self.max_real_value = max(value, self.max_real_value)
 
     def generate_xvals(self):
-        return xrange(self.min_value, self.max_value+1)
+        return xrange(self.min_shown_value, self.max_shown_value+1)
 
     def generate_proportion_yvals(self):
         value_sum = sum(self.countdata)
@@ -646,3 +652,6 @@ class BigHistData:
         if value_sum > 0:
             proportion_yvals = [float(y) / value_sum for y in self.countdata]
         return proportion_yvals
+
+    def print_min_max_real_values(self):
+        print("min=%f, max=%f" % (self.min_real_value, self.max_real_value))
