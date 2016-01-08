@@ -192,7 +192,7 @@ def bar(values, labels, title=None, colors=None, rotate_labels=False):
     return multibar([values], labels, title=title, colors=colors, legend_labels=None, rotate_labels=rotate_labels)
 
 
-def multibar(valueses, labels, title=None, colors=None,
+def multibar(valueses, labels, title='', colors=None,
              legend_labels=None, legend_on_chart=True, rotate_labels=False):
     """barchart of multiple datasets.
     valueses: a list of lists of values. Should have same cardinalities"""

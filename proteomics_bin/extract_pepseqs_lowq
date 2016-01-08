@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-extract peptide sequences from PSMs with low Q-values from a percolator psm output file.
+extract peptide sequences from PSMs with low Q-values from one or more percolator psm output files (union).
 Write them one per line to a file
 """
 
@@ -23,7 +23,7 @@ def main():
 
     # declare args
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('infile', type=argparse.FileType('r'),
+    parser.add_argument('infiles', type=argparse.FileType('r'), nargs='+',
                         help='input file')
     parser.add_argument('--qvalcol', required=True, help='name of the q-value column')
     parser.add_argument('--maxq', type=float, default=DEFAULT_MAXQ,
@@ -42,19 +42,21 @@ def main():
         logger.setLevel(logging.DEBUG)
         # any module-specific debugging goes below
 
-    reader = csv.DictReader(args.infile, delimiter='\t')
-    if args.pepseqcol not in reader.fieldnames:
-        print("Column %s not in available columns: \n%s" % (args.pepseqcol, reader.fieldnames))
-    seqs_to_write = set()
-    for row in reader:
-        if float(row[args.qvalcol]) < args.maxq:
-            seqs_to_write.add(row[args.pepseqcol])
-    for seq in seqs_to_write:
-        args.out.write(seq + '\n')
+    seqs_written = set()
+    for infile in args.infiles:
+        print("processing file %s" % infile.name)
+        reader = csv.DictReader(infile, delimiter='\t')
+        if args.pepseqcol not in reader.fieldnames:
+            print("Column %s not in available columns: \n%s" % (args.pepseqcol, reader.fieldnames))
+            quit()
+        for row in reader:
+            seq = row[args.pepseqcol]
+            if float(row[args.qvalcol]) < args.maxq:
+                if seq not in seqs_written:
+                    args.out.write(seq + '\n')
+                seqs_written.add(row[args.pepseqcol])
     args.out.close()
-    print("Done. Wrote %d sequences" % len(seqs_to_write))
- 
-    
+    print("Done. Wrote %d sequences" % len(seqs_written))
 
 start_time = datetime.now()
 logger.debug("Start time: %s" % start_time)
