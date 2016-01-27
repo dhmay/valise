@@ -20,12 +20,12 @@ def main():
 
     # declare args
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('comparisontype', help='type of comparison (%s)' % comparison_types)
     parser.add_argument('infile1', type=argparse.FileType('r'),
                         help='input file1')
     parser.add_argument('infile2', type=argparse.FileType('r'),
                         help='input file1')
-
+    parser.add_argument('--outunique1', type=argparse.FileType('w'),
+                        help='output file for values unique to infile1')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -37,23 +37,30 @@ def main():
         # any module-specific debugging goes below
 
     set1 = set([line.strip() for line in args.infile1])
-    set2 = set([line.strip() for line in args.infile2])
+    print("Loaded %d elements from file %s" % (len(set1), args.infile1.name))
+    n_in_common = 0
+    set2_size = 0
+    # only populate this if --outunique1
+    intersection = set()
+    for line in args.infile2:
+        set2_size += 1
+        val = line.strip()
+        if line.strip() in set1:
+            n_in_common += 1
+            if args.outunique1:
+                intersection.add(val)
+    print("Loaded %d elements from file %s" % (set2_size, args.infile2.name))
+    print("Intersection: %d" % n_in_common)
+    print("Union: %d" % (len(set1) + set2_size - n_in_common))
+    print("Unique to 1: %d" % (len(set1) - n_in_common))
+    print("Unique to 2: %d" % (set2_size - n_in_common))
 
-    output_set = None
-    if args.comparisontype == 'intersect':
-        output_set = set1.intersection(set2)
-    elif args.comparisontype == 'union':
-        output_set = set1.union(set2)
-    elif args.comparisontype == 'unique1':
-        set1.difference_update(set2)
-        output_set = set1
-    elif args.comparisontype == 'unique2':
-        set2.difference_update(set1)
-        output_set = set2
-    else:
-        quit("Invalid comparisontype %s. Quitting." % args.comparisontype)
-    for output in output_set:
-        print(output)
+    if args.outunique1:
+        unique1 = set1.difference(intersection)
+        for val in unique1:
+            args.outunique1.write(val + '\n')
+        args.outunique1.close()
+        print("Wrote %d values unique to set 1 to %s" % (len(unique1), args.outunique1.name))
 
 start_time = datetime.now()
 logger.debug("Start time: %s" % start_time)

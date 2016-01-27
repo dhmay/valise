@@ -84,7 +84,6 @@ def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
         plt.xscale('log', basex=log_base)
     return figure
 
-
 def multiboxplot(valueses, title=None, labels=None):
     """multiple boxplots side by side"""
     figure = plt.figure()
@@ -160,7 +159,8 @@ def violin_plot(ax, data, pos, bp=True, color='y'):
 
 
 def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
-              legend_labels=None, legend_on_chart=True):
+              legend_labels=None, legend_on_chart=False, histtype='bar',
+              should_normalize=False):
     """histogram of multiple datasets.
     valueses: a list of lists of values"""
     figure = plt.figure()
@@ -168,7 +168,6 @@ def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
     mymin = float("inf")
     mymax = 0
     for values in valueses:
-        print(len(values))
         mymax = max(mymax, max(values))
         mymin = min(mymin, min(values))
     myrange = [mymin, mymax]
@@ -177,10 +176,31 @@ def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
     if not colors:
         colors = COLORS[0:len(valueses)]
     colorind = -1
+
     for values in valueses:
         colorind += 1
-        ax.hist(values,  # histtype = "stepfilled",
-                color=colors[colorind], alpha=0.5, range=myrange, bins=bins)
+        weights = None
+        if should_normalize:
+            weights = np.ones_like(values)/float(len(values))
+        ax.hist(values, color=colors[colorind], alpha=0.5, range=myrange, bins=bins, histtype=histtype,
+                weights=weights)
+    if legend_labels:
+        add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels)
+    if title:
+        ax.set_title(title)
+    return figure
+
+
+def multihist_skinnybar(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
+                        legend_labels=None, legend_on_chart=False, normed=False):
+    """histogram of multiple datasets.
+    valueses: a list of lists of values"""
+    figure = plt.figure()
+    ax = figure.add_subplot(1, 1, 1)
+    if not colors:
+        colors = COLORS[0:len(valueses)]
+
+    ax.hist(valueses, bins=bins, color=colors, normed=normed)
     if legend_labels:
         add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels)
     if title:
@@ -561,7 +581,7 @@ def add_legend_to_chart(ax, legend_on_chart=False, labels=None, rotate_labels=Fa
         logger.debug("Printing legend off chart")
         # shrink x axis by 40%
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.3, box.width * 0.6, box.height * 0.6])
+        ax.set_position([box.x0, box.y0 + box.height * 0.25, box.width * 0.5, box.height * 0.5])
         if labels:
             legend = ax.legend(labels, loc='center left', bbox_to_anchor=(1, 0.5))
         else:
@@ -623,6 +643,36 @@ def big_hist_multiline(big_hist_datas, xlabel='', ylabel=None, title='', labels=
             yvalues = big_hist_data.generate_proportion_yvals()
         yvalueses.append(yvalues)
     return multiline(xvalueses, yvalueses, title=title, xlabel=xlabel, ylabel=ylabel, labels=labels)
+
+
+def big_hist_multihist_proportion(big_hist_datas, title='', labels=None,
+                                  bins=None):
+    """
+    Plot a multi-line plot from BigHistData data objects.
+    Requires min_shown_value and max_shown_value are same for all the inputs
+    :param big_hist_datas:
+    :param xlabel:
+    :param ylabel:
+    :param title:
+    :param labels:
+    :param plot_proportion
+    :return:
+    """
+    assert(len(set([big_hist_data.min_shown_value for big_hist_data in big_hist_datas])) == 1)
+    assert(len(set([big_hist_data.max_shown_value for big_hist_data in big_hist_datas])) == 1)
+    values_forhist = big_hist_datas[0].generate_xvals()
+    xvalueses = []
+    for big_hist_data in big_hist_datas:
+        yvals = big_hist_data.generate_proportion_yvals()
+        xvalues = []
+        for i in xrange(0, len(yvals)):
+            n_thishist_thisval = int(1000 * yvals[i])
+            xvalues.extend([values_forhist[i]] * n_thishist_thisval)
+        xvalueses.append(xvalues)
+    bins = DEFAULT_HIST_BINS
+    if len(values_forhist) < bins:
+        bins = len(values_forhist) + 5
+    return multihist_skinnybar(xvalueses, title=title, bins=bins, legend_labels=labels, normed=True)
 
 
 class BigHistData:
