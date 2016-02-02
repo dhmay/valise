@@ -705,3 +705,12 @@ class BigHistData:
 
     def print_min_max_real_values(self):
         print("min=%f, max=%f" % (self.min_real_value, self.max_real_value))
+
+    def __str__(self):
+        result = "BigHistData:\nmin=%f, max=%f\n" % (self.min_real_value, self.max_real_value)
+        for i in xrange(0, len(self.countdata)):
+            if i > 0:
+                result = result + ","
+            result = result + str(self.countdata[i])
+        result = result + '\n'
+        return result
