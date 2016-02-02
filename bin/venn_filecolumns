@@ -29,7 +29,7 @@ def declare_gather_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('infiles', type=argparse.FileType('r'), nargs='+',
                         help='input files')
-    parser.add_argument('--column', required=True, help='column to venn')
+    parser.add_argument('--column', help='column to venn. If not provided, file must not contain any tabs')
     parser.add_argument('--filtercolumn', help='other column to filter on')
     parser.add_argument('--maxfiltervalue', type=float,
                         help='maximum value of filtercolumn')
@@ -72,19 +72,25 @@ def main():
     # do stuff here
     value_sets = []
     for infile in args.infiles:
-        reader = csv.DictReader(infile, delimiter=args.delimiter)
         value_set = set()
-        assert args.column in reader.fieldnames
-        if args.filtercolumn:
-            assert args.filtercolumn in reader.fieldnames
-        n_total_rows = 0
-        n_kept_rows = 0
-        for row in reader:
-            n_total_rows += 1
-            if not args.filtercolumn or float(row[args.filtercolumn]) < args.maxfiltervalue:
-                n_kept_rows += 1
-                value_set.add(row[args.column])
-        print("File %s, used %d of %d rows" % (infile.name, n_kept_rows, n_total_rows))
+        if args.column:
+            reader = csv.DictReader(infile, delimiter=args.delimiter)
+            assert args.column in reader.fieldnames
+            if args.filtercolumn:
+                assert args.filtercolumn in reader.fieldnames
+            n_total_rows = 0
+            n_kept_rows = 0
+            for row in reader:
+                n_total_rows += 1
+                if not args.filtercolumn or float(row[args.filtercolumn]) < args.maxfiltervalue:
+                    n_kept_rows += 1
+                    value_set.add(row[args.column])
+            print("File %s, used %d of %d rows" % (infile.name, n_kept_rows, n_total_rows))
+        else:
+            for line in infile:
+                if '\t' in line:
+                    quit("File %s contains multiple columns. Please specify --column." % infile.name)
+                value_set.add(line.strip())
         value_sets.append(value_set)
 
     labels = [infile.name for infile in args.infiles]
