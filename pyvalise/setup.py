@@ -9,6 +9,7 @@ setup(name='pyvalise',
       author_email='damonmay@uw.edu',
       packages=['pyvalise'],
       license='None',
-      install_requires=['numpy', 'scipy', 'matplotlib', 'matplotlib_venn', 'pyteomics', 'lxml', 'Bio', 'statsmodels', 'pandas', 'patsy', 'rpy2', 'pysam', 'xlsxwriter'],
+      install_requires=['numpy', 'scipy', 'matplotlib', 'matplotlib_venn', 'pyteomics', 'lxml', 
+	                'biopython', 'statsmodels', 'pandas', 'patsy', 'rpy2', 'pysam', 'xlsxwriter'],
       long_description=open('README.md').read(),
      )

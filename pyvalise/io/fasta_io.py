@@ -56,7 +56,7 @@ def write_records_to_fasta(records, fasta_file):
     SeqIO.write(records, fasta_file, "fasta")
 
 
-def write_dna_name_seq_to_fasta(name, seq, fasta_file, description=None):
+def write_dna_name_seq_to_fasta(name, seq, fasta_file, description=""):
     """
     create a single record for a name and a sequence; write it to a fasta file.
     Should be able to call this multiple times on a single file
