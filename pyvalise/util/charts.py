@@ -491,7 +491,8 @@ def pie(values, title=None, labels=None,
 
 def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
             ytick_positions=None, ylabels=None, colormap='gray',
-            xlabel=None, ylabel=None, title=None, show_colorbar=True):
+            xlabel=None, ylabel=None, title=None, show_colorbar=True,
+            width_proportion=1.0, height_proportion=1.0):
     """heatmap. You want axis labels, you provide 'em."""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -512,6 +513,10 @@ def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
         ax.set_title(title)
     if show_colorbar:
         figure.colorbar(cax)
+    # scale the heatmap's size
+    box = ax.get_position()
+    ax.set_position([box.x0 + box.width * (1.0 - width_proportion), box.y0 + box.height * (1.0 - height_proportion),
+                     box.width * width_proportion, box.height * height_proportion])
 
     return figure
 
