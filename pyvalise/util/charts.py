@@ -268,7 +268,8 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
-              should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
+              should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
+              diff_yaxis_scales=False):
     """
 
     :param x_valueses:
@@ -283,16 +284,23 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     :param should_logx:
     :param should_logy:
     :param log_base:
+    :param diff_yaxis_scales: use different y-axis scales. Only valid for len(y_valueses)==2
     :return:
     """
+    if diff_yaxis_scales and len(y_valueses) != 2:
+        raise Exception("multiline: diff_yaxis_scales only meaningful if two sets of values.")
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
+    axes = [ax]
     if not colors:
         colors = COLORS[0:len(x_valueses)]
     for i in xrange(0, len(x_valueses)):
         x_values = x_valueses[i]
         y_values = y_valueses[i]
         color = colors[i]
+        if diff_yaxis_scales and i == 1:
+            ax = ax.twinx()
+            axes.append(ax)
         if labels:
             if linestyles:
                 ax.plot(x_values, y_values, color=color, label=labels[i], linestyle=linestyles[i])
@@ -307,7 +315,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         ax.set_title(title)
     # Now add the legend with some customizations.
     if labels:
-        add_legend_to_chart(ax, legend_on_chart=legend_on_chart)
+        for ax in axes:
+            add_legend_to_chart(ax, legend_on_chart=legend_on_chart)
     if should_logy:
         plt.yscale('log', basey=log_base)
     if should_logx:
@@ -316,7 +325,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         ax.set_xlabel(xlabel)
     if ylabel:
         ax.set_ylabel(ylabel)
-    ax.set_aspect(1./ax.get_data_ratio())
+    for ax in axes:
+        ax.set_aspect(1./ax.get_data_ratio())
     return figure
 
 

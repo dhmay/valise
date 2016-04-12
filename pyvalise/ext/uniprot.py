@@ -210,11 +210,17 @@ class UniprotEntry:
         self.accession = xml_entry.find(make_node_name('accession')).text
         self.name = xml_entry.find(make_node_name('name')).text
         self.ncbi_taxonomy_id = None
+        self.ec_number = None
         xml_organism = xml_entry.find(make_node_name('organism'))
         if xml_organism:
             for dbref_elem in xml_organism.findall(make_node_name("dbReference")):
                 if dbref_elem.get("type") == "NCBI Taxonomy":
                     self.ncbi_taxonomy_id = int(dbref_elem.get('id'))
                     break
+        ecnumber_xmls = xml_entry.findall(make_node_name('protein') + "/" + make_node_name('recommendedName') + "/" +
+                                          make_node_name('ecNumber'))
+        if ecnumber_xmls:
+            ecnumber_xml = ecnumber_xmls[0]
+            self.ec_number = ecnumber_xml.text
 
 

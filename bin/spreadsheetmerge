@@ -140,7 +140,7 @@ def main():
             if annotcolumn in annotfile_columns:
                 quit("Error! Annot column %s is present in original file. Quitting." % annotcolumn)
             annotfile_columns.append(annotcolumn)
-        args.outannottsv.write("\t".join(annotfile_columns) + '\n')
+        args.outannottsv.write(args.delimiter.join(annotfile_columns) + '\n')
         for i in xrange(0, len(rows1_inorder)):
             row_values = [rows1_inorder[i][col] for col in file1_fieldnames]
             for j in xrange(0, len(row_values)):
@@ -151,7 +151,7 @@ def main():
                 if rows2_inorder[i][annotcolumn] and rows2_inorder[i][annotcolumn] != args.missingindicator:
                     val = rows2_inorder[i][annotcolumn]
                 row_values.append(val)
-            args.outannottsv.write("\t".join(row_values) + '\n')
+            args.outannottsv.write(args.delimiter.join(row_values) + '\n')
         args.outannottsv.close()
         print("Wrote annotation file %s" % args.outannottsv.name)
 

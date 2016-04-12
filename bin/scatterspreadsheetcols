@@ -109,7 +109,7 @@ def main():
         xlabel = args.column1
         if args.xlabel:
             xlabel = args.xlabel
-        ylabel = args.column1
+        ylabel = args.column2
         if args.ylabel:
             ylabel = args.ylabel
         if args.colorcolumn:

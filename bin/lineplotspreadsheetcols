@@ -47,8 +47,12 @@ def main():
                         help='y-axis label')
     parser.add_argument('--histogram', action="store_true",
                         help='also plot a histogram of each column\'s values')
+    parser.add_argument('--noylabels', action="store_true",
+                        help='no y-axis labels')
     parser.add_argument('--missingindicator', default='NA',
                         help='a value that indicates missingness')
+    parser.add_argument('--diffyaxisscales', action="store_true",
+                        help='use different scales for different y-axis value sets (only valid if len(columnsy) == 2)')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -68,6 +72,8 @@ def main():
     yvalses = []
     for _ in xrange(0, len(args.columnsy)):
         yvalses.append(list())
+    if args.diffyaxisscales and len(yvalses) != 2:
+        quit("--diffyaxisscales only valid if plotting exactly two columns on y axis")
     rows_byxval = [row for row in dictreader]
     rows_byxval.sort(key=lambda x: float(x[args.columnx]))
     for row in rows_byxval:
@@ -89,6 +95,8 @@ def main():
     columnsy_for_labels = args.columnsy[:]
     for i in xrange(0, len(columnsy_for_labels)):
         columnsy_for_labels[i] = columnsy_for_labels[i][0:min(MAX_LABEL_LEN, len(columnsy_for_labels[i]))]
+    if args.noylabels:
+        columnsy_for_labels = None
     if args.outpdf:
         print("Building charts...")
         colxfortitle = args.columnx
@@ -103,7 +111,8 @@ def main():
             mycharts.append(charts.multiline(xvalses, yvalses, title="",
                                              xlabel=colxfortitle, ylabel=args.yaxislabel,
                                              labels=columnsy_for_labels, should_logx=args.plotlogx,
-                                             should_logy=args.plotlogy, log_base=args.logbase))
+                                             should_logy=args.plotlogy, log_base=args.logbase,
+                                             diff_yaxis_scales=args.diffyaxisscales))
         if args.histogram:
             mycharts.append(charts.hist(xvals, title=args.columnx))
             for i in xrange(0, len(args.columnsy)):
