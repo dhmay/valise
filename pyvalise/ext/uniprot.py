@@ -191,11 +191,13 @@ def parse_uniprot_xml_file(xml_file):
     :param xml_file:
     :return:
     """
-    header_lines = ['<uniprot xsi:schemaLocation="http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd">']
+    #header_lines = ['<uniprot xsi:schemaLocation="http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd">']
+    header_lines = ['<uniprot xmlns="http://uniprot.org/uniprot" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ',
+                    'xsi:schemaLocation="http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd">']
     footer_lines = ['</uniprot>']
     buf = []
     for line in xml_file:
-        if "<entry >" in line:
+        if "<entry " in line:
             buf = header_lines[:]
         buf.append(line)
         if "</entry>" in line:

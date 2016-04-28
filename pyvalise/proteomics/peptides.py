@@ -256,7 +256,12 @@ class PeptideIdentification:
                  proteins, observed_mass=None, prev_aa=None,
                  next_aa=None, modifications=None, spectrum_name=None,
                  num_tol_term=None, ratio_heavy_light=None,
-                 quant_heavy_area=None, quant_light_area=None):
+                 quant_heavy_area=None, quant_light_area=None,
+                 quant_labelfree_peakintensity=None,
+                 quant_labelfree_peakarea=None,
+                 quant_labelfree_peak_rt_seconds=None,
+                 quant_labelfree_start_rt_seconds=None,
+                 quant_labelfree_end_rt_seconds=None):
         self.scan = int(scan)
         self.time = time
         self.sequence = sequence
@@ -275,6 +280,11 @@ class PeptideIdentification:
         self.ratio_heavy_light = ratio_heavy_light
         self.quant_heavy_area = quant_heavy_area
         self.quant_light_area = quant_light_area
+        self.quant_labelfree_peakintensity = quant_labelfree_peakintensity
+        self.quant_labelfree_peakarea = quant_labelfree_peakarea
+        self.quant_labelfree_peak_rt_seconds = quant_labelfree_peak_rt_seconds
+        self.quant_labelfree_start_rt_seconds = quant_labelfree_start_rt_seconds
+        self.quant_labelfree_end_rt_seconds = quant_labelfree_end_rt_seconds
 
     def get_modpeptide_string(self):
         return ModifiedPeptide(self.sequence, self.modifications).to_string()
@@ -287,6 +297,9 @@ class PeptideIdentification:
     def calc_n_missed_cleavages(self):
         """calculate internal missed cleavages"""
         return calc_peptide_missed_cleavages(self.sequence)
+
+    def has_labelfree_quant(self):
+        return self.quant_labelfree_peakintensity is not None
 
     def __str__(self):
         return "PeptideIdentification: %s, prob=%f" % (self.sequence,
