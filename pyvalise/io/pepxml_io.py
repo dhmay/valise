@@ -83,11 +83,12 @@ def read_pepxml(pepxml_file,
             observed_mass = float(spectrum_query_elem.get('precursor_neutral_mass'))
             spectrum_name = spectrum_query_elem.get('spectrum')
 
-
-            # assuming only one search_result per spectrum_query and 
+            # assuming only one search_result per spectrum_query and
             # only one search_hit per search_result (or we only care about
             # the first)
             search_hit_elem = spectrum_query_elem.find(url + 'search_result').find(url + 'search_hit')
+            if not search_hit_elem:
+                continue
             peptide = search_hit_elem.get("peptide")
             prev_aa = search_hit_elem.get('peptide_prev_aa')
             next_aa = search_hit_elem.get('peptide_next_aa')
@@ -119,15 +120,30 @@ def read_pepxml(pepxml_file,
             ratio_heavy_light = None
             quant_heavy_area = None
             quant_light_area = None
+            quant_labelfree_peakintensity = None
+            quant_labelfree_peakarea = None
+            quant_labelfree_peak_rt_seconds = None
+            quant_labelfree_start_rt_seconds = None
+            quant_labelfree_end_rt_seconds = None
             for analysis_elem in search_hit_elem.findall(url + 'analysis_result'):
                 # only XPress quantitation supported now
-                if analysis_elem.attrib['analysis'] == 'xpress':
+                if analysis_elem.attrib['analysis'] == 'xpresslabelfree':
+                    xpress_elem = analysis_elem.find(url + 'xpresslabelfree_result')
+                    if xpress_elem is not None:
+                        quant_labelfree_peakintensity = float(xpress_elem.attrib['peak_intensity'])
+                        quant_labelfree_peakarea = float(xpress_elem.attrib['peak_area'])
+                        quant_labelfree_peak_rt_seconds = float(xpress_elem.attrib['peak_intensity_RT_seconds'])
+                        quant_labelfree_start_rt_seconds = float(xpress_elem.attrib['first_scan_RT_seconds'])
+                        quant_labelfree_end_rt_seconds = float(xpress_elem.attrib['last_scan_RT_seconds'])
+                    break
+                elif analysis_elem.attrib['analysis'] == 'xpress':
                     xpress_elem = analysis_elem.find(url + 'xpressratio_result')
                     if xpress_elem is not None:
                         ratio_heavy_light = 1.0 / max(float(xpress_elem.attrib['decimal_ratio']), MIN_RATIO)
                         quant_heavy_area = float(xpress_elem.attrib['heavy_area'])
                         quant_light_area = float(xpress_elem.attrib['light_area'])
                     break
+
             if not min_pprophet or probability >= min_pprophet:
                 peptide_id = peptides.PeptideIdentification(scan, time,
                                                             peptide, probability,
@@ -141,7 +157,12 @@ def read_pepxml(pepxml_file,
                                                             num_tol_term=num_tol_term,
                                                             ratio_heavy_light=ratio_heavy_light,
                                                             quant_heavy_area=quant_heavy_area,
-                                                            quant_light_area=quant_light_area)
+                                                            quant_light_area=quant_light_area,
+                                                            quant_labelfree_peakintensity=quant_labelfree_peakintensity,
+                                                            quant_labelfree_peakarea=quant_labelfree_peakarea,
+                                                            quant_labelfree_peak_rt_seconds=quant_labelfree_peak_rt_seconds,
+                                                            quant_labelfree_start_rt_seconds=quant_labelfree_start_rt_seconds,
+                                                            quant_labelfree_end_rt_seconds=quant_labelfree_end_rt_seconds)
                 run_result.peptide_ids.append(peptide_id)
 
     return result
@@ -154,6 +175,7 @@ def write_pepxml(msms_pipeline_analysis, outfile):
     # TODO: write ratios
     ET.register_namespace('', PEPXML_NS_URL)
     root = ET.Element(PEPXML_NS + "msms_pipeline_analysis")
+
 
     #add dummy PeptideProphet info
     ET.SubElement(
@@ -173,8 +195,11 @@ def write_pepxml(msms_pipeline_analysis, outfile):
                                             {'precursor_mass_type': 'monoisotopic',
                                              'search_engine': run.search_engine,
                                              'base_name': run.name})
+        fasta = run.fasta
+        if fasta is None:
+            fasta = ''
         ET.SubElement(search_summary_elem, PEPXML_NS + 'search_database',
-                      {'local_path': run.fasta})
+                      {'local_path': fasta})
         ET.SubElement(search_summary_elem, PEPXML_NS + 'enzymatic_search_constraint',
                       {'max_num_internal_cleavages': str(run.max_missed_cleavages),
                        'min_number_termini': str(run.min_tryptic_termini),
@@ -196,6 +221,8 @@ def write_pepxml(msms_pipeline_analysis, outfile):
                                'mass': str(mod.modified_mass),
                                'variable': mod.get_variable_Y_N(),
                                'symbol': '^'})
+        #print([run.name, run.search_engine, run.fasta])
+        #print(ET.tostring(run_elem))
         sq_index = 0
         for peptide_id in run.peptide_ids:
             sq_index += 1
@@ -213,6 +240,11 @@ def add_spectrum_query(run_elem, peptide_id, index, run_base_name):
     prec_neut_mass = peptide_id.mass
     if peptide_id.observed_mass:
         prec_neut_mass = peptide_id.observed_mass
+    else:
+        peptide_id.observed_mass = peptide_id.mass
+    if not peptide_id.num_tol_term:
+        peptide_id.num_tol_term = 2
+    # print([index, peptide_id.scan, peptide_id.charge, run_base_name, peptide_id, prec_neut_mass, peptide_id.time])
     sq_elem = ET.SubElement(run_elem, PEPXML_NS + 'spectrum_query',
                             {'index': str(index),
                              'start_scan': str(peptide_id.scan),
@@ -233,6 +265,9 @@ def add_spectrum_query(run_elem, peptide_id, index, run_base_name):
         protein = peptide_id.proteins[0]
     # todo: num_matched_ions is fake
     # todo: num_missed_cleavages is fake
+    # print([peptide_id.sequence, peptide_id.observed_mass, len(peptide_id.proteins), peptide_id.get_delta_mass(),
+    #        peptide_id.calc_n_missed_cleavages(), peptide_id.num_tol_term, prev_aa_string, next_aa_string])
+
     searchhit_elem = ET.SubElement(ET.SubElement(sq_elem, PEPXML_NS + 'search_result'),
                                    PEPXML_NS + 'search_hit',
                                    {'peptide': peptide_id.sequence,
@@ -260,11 +295,13 @@ def add_spectrum_query(run_elem, peptide_id, index, run_base_name):
                            'mass': str(mod.modified_mass)})
     # todo: add search scores
     # todo: figure out all_ntt_prob
+    #print(peptide_id.probability)
     ET.SubElement(ET.SubElement(searchhit_elem, PEPXML_NS + 'analysis_result',
                                 {'analysis': 'peptideprophet'}),
                   PEPXML_NS + 'peptideprophet_result',
                   {'probability': str(peptide_id.probability),
                    'all_ntt_prob': '(0.0000,0.0000,%f)' % peptide_id.probability})
+    #print(ET.tostring(sq_elem))
 
 
 def construct_spectrum_name(run_base_name, peptide_id):
