@@ -444,7 +444,7 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
     """
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
-    if colors:
+    if colors is not None:
         myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap, edgecolors=None, alpha=0.5)
     else:
         myscatter = ax.scatter(x_values, y_values, s=pointsize, cmap=cmap, edgecolors=None, alpha=0.5)
