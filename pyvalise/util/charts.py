@@ -9,6 +9,7 @@ matplotlib.use('Agg')
 import logging
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from statsmodels.graphics import gofplots
 import statsmodels.api as sm
 from pyvalise.util import stats as pyptide_stats
@@ -426,7 +427,8 @@ def hexbin(x_values, y_values, title=None,
 def scatterplot(x_values, y_values, title=None, lowess=False,
                 xlabel='', ylabel='', pointsize=1, draw_1to1 = False,
                 colors=None, cmap=None, show_colorbar=False,
-                should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
+                should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
+                alpha=0.5):
     """
     scatter plot
     :param x_values:
@@ -445,9 +447,9 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if colors is not None:
-        myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap, edgecolors=None, alpha=0.5)
+        myscatter = ax.scatter(x_values, y_values, s=pointsize, c=colors, cmap=cmap, edgecolors='none', alpha=alpha)
     else:
-        myscatter = ax.scatter(x_values, y_values, s=pointsize, cmap=cmap, edgecolors=None, alpha=0.5)
+        myscatter = ax.scatter(x_values, y_values, s=pointsize, cmap=cmap, edgecolors='none', alpha=alpha)
     if draw_1to1:
         lims = [
             np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
@@ -553,15 +555,17 @@ def surface(x_values, y_values, z_values, title=None,
 
 
 def scatter3d(x_values, y_values, z_values, title=None,
-                xlabel='', ylabel='', zlabel='', pointsize=1,
-                colors=None, should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
+                xlabel='', ylabel='', zlabel='', pointsize=1, alpha=0.5,
+                colors=None, should_logx=False, should_logy=False, cmap=None,
+              log_base=DEFAULT_LOG_BASE, show_colorbar=False):
     """3D scatterplot"""
     figure = plt.figure()
-    ax = figure.add_subplot(111, projection='3d')
+    ax = Axes3D(figure)
+    myscatter = None
     if colors:
-        ax.scatter(x_values, y_values, z_values, s=pointsize, c=colors)
+        myscatter = ax.scatter(x_values, y_values, z_values, s=pointsize, c=colors, alpha=alpha, cmap=cmap, edgecolors='none')
     else:
-        ax.scatter(x_values, y_values, z_values, s=pointsize)
+        myscatter = ax.scatter(x_values, y_values, z_values, s=pointsize, alpha=alpha, cmap=cmap, edgecolors='none')
 
     if should_logx:
         plt.xscale('log', basex=log_base)
@@ -575,6 +579,8 @@ def scatter3d(x_values, y_values, z_values, title=None,
         ax.set_zlabel(ylabel)
     if title:
         ax.set_title(title)
+    if show_colorbar:
+        plt.colorbar(myscatter)
     return figure
 
 

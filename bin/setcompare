@@ -26,6 +26,10 @@ def main():
                         help='input file1')
     parser.add_argument('--outunique1', type=argparse.FileType('w'),
                         help='output file for values unique to infile1')
+    parser.add_argument('--outunion', type=argparse.FileType('w'),
+                        help='output file for all values in either file')
+    parser.add_argument('--outintersection', type=argparse.FileType('w'),
+                        help='output file for all values in bothfiles')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
 
@@ -40,18 +44,26 @@ def main():
     print("Loaded %d elements from file %s" % (len(set1), args.infile1.name))
     n_in_common = 0
     set2_size = 0
-    # only populate this if --outunique1
+    # only populate this if --outunique1 or --outintersection
     intersection = set()
+    # only populate this if --outunion
+    union = set()
+    if args.outunion:
+        union.update(set1)
     for line in args.infile2:
         set2_size += 1
         val = line.strip()
         if line.strip() in set1:
             n_in_common += 1
-            if args.outunique1:
+            if args.outunique1 or args.outintersection:
                 intersection.add(val)
+        if args.outunion:
+            union.add(val)
     print("Loaded %d elements from file %s" % (set2_size, args.infile2.name))
     print("Intersection: %d" % n_in_common)
-    print("Union: %d" % (len(set1) + set2_size - n_in_common))
+    union_size = len(set1) + set2_size - n_in_common
+    print("Union: %d" % union_size)
+    print("Intersection proportion of Union: %f" % (float(n_in_common) / float(union_size)))
     print("Unique to 1: %d" % (len(set1) - n_in_common))
     print("Unique to 2: %d" % (set2_size - n_in_common))
 
@@ -61,6 +73,17 @@ def main():
             args.outunique1.write(val + '\n')
         args.outunique1.close()
         print("Wrote %d values unique to set 1 to %s" % (len(unique1), args.outunique1.name))
+    if args.outunion:
+        for val in union:
+            args.outunion.write(val + '\n')
+        args.outunion.close()
+        print("Wrote %d union values to %s" % (len(union), args.outunion.name))
+    if args.outintersection:
+        for val in intersection:
+            args.outintersection.write(val + '\n')
+        args.outintersection.close()
+        print("Wrote %d intersection values to %s" % (len(intersection), args.outintersection.name))
+
 
 start_time = datetime.now()
 logger.debug("Start time: %s" % start_time)
