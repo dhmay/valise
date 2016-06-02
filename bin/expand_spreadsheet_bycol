@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+"""
+given a spreadsheet with a column with multiple values separated by a delimiter,
+for each row, create one row for each unique value, with all other columns the same
+"""
+
+import argparse
+import logging
+from datetime import datetime
+import csv
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2015 Damon May"
+__license__ = ""
+__version__ = ""
+
+logger = logging.getLogger(__name__)
+
+
+def main():
+    # declare args
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('infile', type=argparse.FileType('r'),
+                        help='input spreadsheet file')
+    parser.add_argument('column', help='column name')
+    parser.add_argument('out', type=argparse.FileType('w'),
+                        help='output file')
+    parser.add_argument('--delimiter', default=';', help='Delimiter')
+
+    parser.add_argument('--debug', action="store_true", help='Enable debug logging')
+    args = parser.parse_args()
+
+    # logging
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s: %(message)s")
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+
+    reader = csv.DictReader(args.infile, delimiter='\t')
+
+    assert(args.column in reader.fieldnames)
+
+    args.out.write('\t'.join(reader.fieldnames) + '\n')
+
+    n_rows_written = 0
+    for row in reader:
+        col_vals_str = row[args.column]
+        if not col_vals_str:
+            continue
+        for col_val in col_vals_str.split(args.delimiter):
+            outvals = []
+            for fieldname in reader.fieldnames:
+                if fieldname == args.column:
+                    outvals.append(col_val)
+                else:
+                    outvals.append(row[fieldname])
+            args.out.write('\t'.join(outvals) + '\n')
+            n_rows_written += 1
+
+    args.out.close()
+    print("Done. Wrote %d rows." % n_rows_written)
+
+
+start_time = datetime.now()
+main()
+end_time = datetime.now() - start_time
+
+logger.debug("Execution time: %s" % end_time)

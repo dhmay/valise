@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+"""
+scatterplot two spreadsheet columns against each other
+"""
+
+import argparse
+import logging
+from datetime import datetime
+import csv
+import math
+import numpy as np
+from pyvalise.util import charts
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2015 Damon May"
+__license__ = ""
+__version__ = ""
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_LOG_BASE = charts.DEFAULT_LOG_BASE
+
+def main():
+    # declare args
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('infile', type=argparse.FileType('r'),
+                        help='input spreadsheet file')
+    parser.add_argument('column1', help='column name')
+    parser.add_argument('column2', help='column name')
+    parser.add_argument('--outpdf', type=argparse.FileType('w'),
+                        help='output PDF')
+    parser.add_argument('--plotlogx', action="store_true",
+                        help='log-transform values from first column?')
+    parser.add_argument('--plotlogy', action="store_true",
+                        help='log-transform values from second column?')
+    parser.add_argument('--neglog10x', action="store_true",
+                        help='transform values from first column as -log10?')
+    parser.add_argument('--neglog10y', action="store_true",
+                        help='transform values from second column as -log10?')
+    parser.add_argument('--logbase', type=float, default=DEFAULT_LOG_BASE,
+                        help='base for log-transformation')
+    parser.add_argument('--maxx', type=int, default=None,
+                        help='maximum value to allow for X (peg greater values to this value)')
+    parser.add_argument('--maxy', type=int, default=None,
+                        help='maximum value to allow for Y (peg greater values to this value)')
+    parser.add_argument('--gridsize', type=int, default=100,
+                        help='grid size for both axes')
+    parser.add_argument('--gridsizex', type=int, default=100,
+                        help='grid size for X axis')
+    parser.add_argument('--gridsizey', type=int, default=100,
+                        help='grid size for Y axis')
+    parser.add_argument('--histogram', action="store_true",
+                        help='also plot a histogram of each column\'s values')
+    parser.add_argument('--logcolor', action="store_true",
+                        help='log-transform the color values?')
+    parser.add_argument('--missingindicator', default='NA',
+                        help='a value that indicates missingness')
+    parser.add_argument('--title', default=100,
+                        help='title')
+    parser.add_argument('--debug', action="store_true", help='Enable debug logging')
+    args = parser.parse_args()
+
+    # logging
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s: %(message)s")
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+
+
+    xvals = []
+    yvals = []
+    n_xvals_plottable = 0
+    n_yvals_plottable = 0
+    for row in csv.DictReader(args.infile, delimiter='\t'):
+        xvalstr = row[args.column1]
+        yvalstr = row[args.column2]
+        if xvalstr:
+            n_xvals_plottable += 1
+        if yvalstr:
+            n_yvals_plottable += 1
+        if xvalstr is not None and yvalstr is not None \
+                and xvalstr != args.missingindicator and yvalstr != args.missingindicator:
+            xval = float(xvalstr)
+            if args.maxx and xval > args.maxx:
+                xval = args.maxx
+            yval = float(yvalstr)
+            if args.maxy and yval > args.maxx:
+                yval = args.maxy
+            if args.neglog10x:
+                xval = -math.log(xval, 10)
+            if args.neglog10y:
+                yval = -math.log(yval, 10)
+            xvals.append(xval)
+            yvals.append(yval)
+    mycharts = []
+    if args.outpdf:
+        print("Building charts...")
+        col1fortitle = args.column1
+        col2fortitle = args.column2
+        if args.neglog10x:
+            col1fortitle = "-log10(" + args.column1 + ")"
+        if args.neglog10y:
+            col2fortitle = "-log10(" + args.column2 + ")"
+        title = col1fortitle + " vs. " + col2fortitle
+        if args.title:
+            title = args.title
+        print("in 1: %d; in 2: %d; comparable: %d" %
+              (n_xvals_plottable, n_yvals_plottable, len(xvals)))
+        gridsize = args.gridsize
+        if args.gridsizex and args.gridsizey:
+            gridsize = (args.gridsizex, args.gridsizey)
+        mycharts.append(charts.hexbin(xvals, yvals,
+                                      title=title,
+                                      xlabel=args.column1,
+                                      ylabel=args.column2,
+                                      should_logx=args.plotlogx,
+                                      should_logy=args.plotlogy,
+                                      log_base=args.logbase,
+                                      gridsize=gridsize,
+                                      should_log_color=args.logcolor))
+        if args.histogram:
+            print("Adding histograms....")
+            mycharts.append(charts.hist(xvals, title=args.column1))
+            mycharts.append(charts.hist(yvals, title=args.column2))
+        charts.write_pdf(mycharts, args.outpdf)
+        print("Wrote charts to %s" % args.outpdf.name)
+
+    print("Done.")
+
+
+start_time = datetime.now()
+main()
+end_time = datetime.now() - start_time
+
+logger.debug("Execution time: %s" % end_time)

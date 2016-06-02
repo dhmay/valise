@@ -560,7 +560,8 @@ def scatter3d(x_values, y_values, z_values, title=None,
               log_base=DEFAULT_LOG_BASE, show_colorbar=False):
     """3D scatterplot"""
     figure = plt.figure()
-    ax = Axes3D(figure)
+    # ax = Axes3D(figure)
+    ax = figure.add_subplot(111, projection='3d')
     myscatter = None
     if colors:
         myscatter = ax.scatter(x_values, y_values, z_values, s=pointsize, c=colors, alpha=alpha, cmap=cmap, edgecolors='none')
