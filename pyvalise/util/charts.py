@@ -209,14 +209,17 @@ def multihist_skinnybar(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=Non
     return figure
 
 
-def bar(values, labels, title=None, colors=None, rotate_labels=False):
-    return multibar([values], labels, title=title, colors=colors, legend_labels=None, rotate_labels=rotate_labels)
+def bar(values, labels, title=None, colors=None, rotate_labels=False, axis_limits=None):
+    return multibar([values], labels, title=title, colors=colors, legend_labels=None,
+                    rotate_labels=rotate_labels, axis_limits=axis_limits)
 
 
 def multibar(valueses, labels, title='', colors=None,
-             legend_labels=None, legend_on_chart=True, rotate_labels=False):
+             legend_labels=None, legend_on_chart=True, rotate_labels=False,
+             axis_limits=None):
     """barchart of multiple datasets.
     valueses: a list of lists of values. Should have same cardinalities"""
+    print(axis_limits)
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if not colors:
@@ -228,6 +231,8 @@ def multibar(valueses, labels, title='', colors=None,
         for xind in xrange(0, len(xvals)):
             xvals[xind] = 2 * xind * len(valueses) + ind
         ax.bar(xvals, values, color=colors[ind])
+    if axis_limits is not None:
+        plt.ylim(axis_limits)
     tick_xs = [0] * len(labels)
     for ind in xrange(0, len(tick_xs)):
         tick_xs[ind] = 2 * ind * len(valueses)
@@ -270,7 +275,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-              diff_yaxis_scales=False):
+              diff_yaxis_scales=False, y_axis_limits=None):
     """
 
     :param x_valueses:
@@ -312,6 +317,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
                 ax.plot(x_values, y_values, color=color, linestyle=linestyles[i])
             else:
                 ax.plot(x_values, y_values, color=color)
+    if y_axis_limits is not None:
+        plt.ylim(y_axis_limits)
     if title:
         ax.set_title(title)
     # Now add the legend with some customizations.
