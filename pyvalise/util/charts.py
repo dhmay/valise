@@ -708,22 +708,26 @@ class BigHistData:
     """
     A data structure for storing count data for big datasets, to be plotted as a line or multiline plot
     """
-    def __init__(self, max_shown_value, min_shown_value=0):
+    def __init__(self, max_shown_value, min_shown_value=0, binsize=1.0):
         assert(max_shown_value > min_shown_value)
         self.min_shown_value = min_shown_value
         self.max_shown_value = max_shown_value
-        self.countdata = [0] * (max_shown_value - min_shown_value + 1)
+        self.binsize = binsize
+        self.n_bins = int((max_shown_value - min_shown_value + 1) / binsize) + 1
+        self.countdata = [0] * self.n_bins
         self.min_real_value = float('inf')
         self.max_real_value = float('-inf')
 
     def add_value(self, value):
         cropped_value = max(self.min_shown_value, min(value, self.max_shown_value))
-        self.countdata[cropped_value - self.min_shown_value] += 1
+        bin_idx = int((cropped_value - self.min_shown_value) / self.binsize)
+        #print("add_value, value=%f, bin=%d, binsize=%f, minval=%f" % (cropped_value, bin_idx, self.binsize, self.min_shown_value))
+        self.countdata[bin_idx] += 1
         self.min_real_value = min(value, self.min_real_value)
         self.max_real_value = max(value, self.max_real_value)
 
     def generate_xvals(self):
-        return xrange(self.min_shown_value, self.max_shown_value+1)
+        return [self.min_shown_value + self.binsize * bin_idx for bin_idx in xrange(0, self.n_bins)]
 
     def generate_proportion_yvals(self):
         value_sum = sum(self.countdata)
