@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_QVALUE = 0.01
 DEFAULT_QVALUE_COLNAME = "percolator q-value"
-DEFAULT_PROTEINID_COLNAME = "protein id"
 
 
 def main():
@@ -30,8 +29,6 @@ def main():
     parser.add_argument('infiles', type=argparse.FileType('r'), nargs='+',
                         help='input file(s)')
     parser.add_argument('--qvalcol', default=DEFAULT_QVALUE_COLNAME, help='name of the q-value column')
-    parser.add_argument('--byfasta', action="store_true", help='Give counts of PSMs')
-    parser.add_argument('--protidcol', help='name of the protein ID column')
     parser.add_argument('--qvalue', default=DEFAULT_MAX_QVALUE, type=float, help='q-value cutoff')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
     args = parser.parse_args()
@@ -43,42 +40,27 @@ def main():
         logger.setLevel(logging.DEBUG)
         # any module-specific debugging goes below
 
-    if args.protidcol:
-        print("file\ttotal\tplasmo\thuman\tcrap\tunknown")
-    else:
-        print("file\ttotal")
+    print("file\tpsms")
     for infile in args.infiles:
         reader = csv.DictReader(infile, delimiter='\t')
         n_lessthan_qvalue = 0
-        n_plasmo_lessthan_qvalue = 0
-        n_human_lessthan_qvalue = 0
-        n_crap_lessthan_qvalue = 0
-        n_unknown_lessthan_qvalue = 0
         n_total = 0
-        if not args.qvalcol in reader.fieldnames:
-            quit("%s not in file columns:\n%s" % (args.qvalcol, reader.fieldnames))
-        for row in reader:
-            qval = row[args.qvalcol]
-            if float(qval) < args.qvalue:
-                n_lessthan_qvalue += 1
-                if args.protidcol and args.byfasta:
-                    protein = row[args.protidcol]
-                    if 'GPMCRAP' in protein:
-                        n_crap_lessthan_qvalue += 1
-                    elif 'HUMAN' in protein:
-                        n_human_lessthan_qvalue += 1
-                    elif 'PF' in protein:
-                        n_plasmo_lessthan_qvalue += 1
-                    else:
-                        n_unknown_lessthan_qvalue += 1
-            n_total += 1
-        if args.protidcol and args.byfasta:
-            outchunks = [infile.name, str(n_lessthan_qvalue), str(n_plasmo_lessthan_qvalue),
-                         str(n_human_lessthan_qvalue),
-                         str(n_crap_lessthan_qvalue), str(n_unknown_lessthan_qvalue)]
-            print("\t".join(outchunks))
-        else:
-            print("%s\t%d" % (infile.name, n_lessthan_qvalue))
+        if reader.fieldnames is not None:
+            if args.qvalcol not in reader.fieldnames:
+                found_it = False
+                for fieldname in reader.fieldnames:
+                    if 'q-value' in fieldname:
+                        args.qvalcol = fieldname
+                        found_it = True
+                        break
+                if not found_it:
+                    quit("file %s: %s not in file columns:\n%s" % (infile.name, args.qvalcol, reader.fieldnames))
+            for row in reader:
+                qval = row[args.qvalcol]
+                if float(qval) < args.qvalue:
+                    n_lessthan_qvalue += 1
+                n_total += 1
+        print("%s\t%d" % (infile.name, n_lessthan_qvalue))
 
 
 start_time = datetime.now()
