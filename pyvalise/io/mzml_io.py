@@ -51,21 +51,29 @@ def read_mzml(mzml_filepath, ms_levels=(1, 2)):
 
 
 def read_mzml_scan(scan):
+    """
+
+    :param scan:
+    :return:
+    """
+    # see below for the byzantine intricacies of the scan object
     ms_level = scan['ms level']
     scan_number = int(scan['id'][scan['id'].index('scan=') + 5:])
+    mz_array = scan['m/z array']
+    intensity_array = scan['intensity array']
+    retention_time = scan['scanList']['scan']['scan start time']
     if ms_level == 1:
-        return spectra.MSSpectrum(scan_number,
-                                 scan['m/z array'],
-                                 scan['intensity array'])
+        return spectra.MSSpectrum(scan_number, retention_time,
+                                  mz_array,
+                                  intensity_array)
     elif ms_level == 2:
-        # see below for the byzantine intricacies of the scan object
         precursor_selected_ion_map = scan['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]
         precursor_mz = precursor_selected_ion_map['selected ion m/z']
         charge = precursor_selected_ion_map['charge state']
-        return spectra.MS2Spectrum(scan_number,
-                                  scan['m/z array'],
-                                  scan['intensity array'],
-                                  precursor_mz, charge)
+        return spectra.MS2Spectrum(scan_number, retention_time,
+                                   mz_array,
+                                   intensity_array,
+                                   precursor_mz, charge)
     else:
         raise ValueError("Unhandleable scan level %d" % ms_level)
 
