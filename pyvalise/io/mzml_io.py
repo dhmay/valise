@@ -23,19 +23,24 @@ MIN_RATIO = 0.001
 log = logging.getLogger(__name__)
 
 
-def retrieve_mzml_scans_byindex(mzml_filepath, scan_numbers):
+def retrieve_scans(mzml_file, scan_numbers):
     """
     retrieve scans from a preindexed mzML file.
-    :param mzml_filepath:
+    :param mzml_file:
+    :param scan_numbers
     :return:
     """
-    with mzml.PreIndexedMzML(mzml_filepath) as reader:
+    with mzml.PreIndexedMzML(mzml_file) as reader:
         for scan_number in scan_numbers:
-            spectrum = read_mzml_scan(reader.get_by_id("controllerType=0 controllerNumber=1 scan=%d" % scan_number))
+            spectrum = read_scan(reader.get_by_id("controllerType=0 controllerNumber=1 scan=%d" % scan_number))
             yield spectrum
 
 
-def read_mzml(mzml_filepath, ms_levels=(1, 2)):
+def read_ms2_scans(mzml_file):
+    return read_scans(mzml_file, [2])
+
+
+def read_scans(mzml_file, ms_levels=(1, 2)):
     """
     yields all spectra from an mzML file with level in ms_levels, or
     all processable scans if ms_levels not specified
@@ -44,13 +49,13 @@ def read_mzml(mzml_filepath, ms_levels=(1, 2)):
     :param min_pprophet:
     :return:
     """
-    with mzml.MzML(mzml_filepath) as reader:
+    with mzml.MzML(mzml_file) as reader:
         for scan in reader:
             if scan['ms level' in ms_levels]:
-                yield read_mzml_scan(scan)
+                yield read_scan(scan)
 
 
-def read_mzml_scan(scan):
+def read_scan(scan):
     """
 
     :param scan:
@@ -61,7 +66,7 @@ def read_mzml_scan(scan):
     scan_number = int(scan['id'][scan['id'].index('scan=') + 5:])
     mz_array = scan['m/z array']
     intensity_array = scan['intensity array']
-    retention_time = scan['scanList']['scan']['scan start time']
+    retention_time = scan['scanList']['scan'][0]['scan start time']
     if ms_level == 1:
         return spectra.MSSpectrum(scan_number, retention_time,
                                   mz_array,
