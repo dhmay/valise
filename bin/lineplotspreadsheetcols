@@ -45,6 +45,10 @@ def main():
                         help='base for log-transformation')
     parser.add_argument('--yaxislabel', default='',
                         help='y-axis label')
+    parser.add_argument('--xaxislabel', default='',
+                        help='x-axis label')
+    parser.add_argument('--minyaxisvalue', type=float,
+                        help='minimum y-axis value')
     parser.add_argument('--histogram', action="store_true",
                         help='also plot a histogram of each column\'s values')
     parser.add_argument('--noylabels', action="store_true",
@@ -63,7 +67,7 @@ def main():
         logger.setLevel(logging.DEBUG)
 
     dictreader = csv.DictReader(args.infile, delimiter='\t')
-    logger.debug("Columns: %s" % dictreader.fieldnames)
+    logger.debug("tsv file columns: %s" % dictreader.fieldnames)
     if not args.columnsy:
         args.columnsy = dictreader.fieldnames[:]
         args.columnsy.remove(args.columnx)
@@ -99,20 +103,40 @@ def main():
         columnsy_for_labels = None
     if args.outpdf:
         print("Building charts...")
-        colxfortitle = args.columnx
+        x_axis_label = args.columnx
+        if args.xaxislabel:
+            x_axis_label = args.xaxislabel
+
+        y_axis_label = args.columnsy[0]
+        if args.yaxislabel:
+            y_axis_label = args.yaxislabel
+
+        y_axis_limits = None
+        print("*")
+        print(args.minyaxisvalue)
+        if args.minyaxisvalue is not None:
+            print("yeah!")
+            max_yval = min(yvalses[0])
+            for yvals in yvalses:
+                max_yval = max(max_yval, max(yvals))
+            y_axis_limits = args.minyaxisvalue, max_yval + 0.1 * (max_yval - args.minyaxisvalue)
+            print("Whee! %s, %s" % y_axis_limits)
 
         if len(args.columnsy) == 1:
+            print("Whee! %s, %s" % y_axis_limits)
             mycharts.append(charts.line_plot(xvals, yvalses[0], title="",
-                                             xlabel=colxfortitle, ylabel=args.columnsy[0],
+                                             xlabel=x_axis_label, ylabel=y_axis_label,
                                              should_logx=args.plotlogx,
-                                             should_logy=args.plotlogy, log_base=args.logbase))
+                                             should_logy=args.plotlogy, log_base=args.logbase,
+                                             y_axis_limits=y_axis_limits))
         else:
             xvalses = [xvals] * len(args.columnsy)
             mycharts.append(charts.multiline(xvalses, yvalses, title="",
-                                             xlabel=colxfortitle, ylabel=args.yaxislabel,
+                                             xlabel=x_axis_label, ylabel=y_axis_label,
                                              labels=columnsy_for_labels, should_logx=args.plotlogx,
                                              should_logy=args.plotlogy, log_base=args.logbase,
-                                             diff_yaxis_scales=args.diffyaxisscales))
+                                             diff_yaxis_scales=args.diffyaxisscales,
+                                             y_axis_limits=y_axis_limits))
         if args.histogram:
             mycharts.append(charts.hist(xvals, title=args.columnx))
             for i in xrange(0, len(args.columnsy)):

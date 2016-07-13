@@ -251,11 +251,14 @@ def multibar(valueses, labels, title='', colors=None,
 
 def line_plot(x_values, y_values, title=None, lowess=False,
               xlabel=None, ylabel=None,
-              should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
+              should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
+              y_axis_limits=None):
     """trivial line plot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     ax.plot(x_values, y_values)
+    if y_axis_limits is not None:
+        plt.ylim(y_axis_limits)
     if lowess:
         lowess = sm.nonparametric.lowess(y_values, x_values, frac=0.1)
         ax.plot(lowess[:, 0], lowess[:, 1])
