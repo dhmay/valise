@@ -7,6 +7,7 @@ import argparse
 import logging
 from datetime import datetime
 import csv
+import sys
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -19,6 +20,7 @@ DEFAULT_MAX_QVALUE = 0.01
 DEFAULT_QVALUE_COLNAME = "percolator q-value"
 DEFAULT_PEPTIDE_COLNAME = "sequence"
 
+csv.field_size_limit(sys.maxsize)
 
 def main():
 

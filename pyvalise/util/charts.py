@@ -17,6 +17,7 @@ from scipy.stats import gaussian_kde
 from numpy import arange
 from matplotlib import colors
 import numpy as np
+import matplotlib.mlab as mlab
 
 
 
@@ -38,8 +39,8 @@ logger = logging.getLogger(__name__)
 BASE_COLORS = ['#0000ff',  # blue
                '#ff0000',  # red
                '#00ff00',  # green
-               '#ff00ff',  # purple
                '#888888',  # grey
+               '#ff00ff',  # purple
                '#FFFF00',  # brown?
                '#222222',  # dark grey
                ]
@@ -64,9 +65,9 @@ def write_pdf(figures, pdf_file):
 
 
 def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
-         should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE):
-    """trivial histogram.
-    Stupidly, the default range doesn't go from 0."""
+         should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
+         gaussian_mus=None, gaussian_sigmas=None):
+    """trivial histogram."""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if not color:
@@ -75,8 +76,15 @@ def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
     myrange = [min(values), max(values)]
     rangesize = myrange[1] - myrange[0]
     myrange = [myrange[0] - rangesize / 20, myrange[1] + rangesize / 20]
-    ax.hist(values,  # histtype = "stepfilled",
+    myhist = ax.hist(values,  # histtype = "stepfilled",
             color=color, range=myrange, bins=bins)
+    if gaussian_mus and gaussian_sigmas:
+        assert(len(gaussian_mus) == len(gaussian_sigmas))
+        for i in xrange(0, len(gaussian_mus)):
+            x = np.linspace(myrange[0], myrange[1])
+            dx = myhist[1][1] - myhist[1][0]
+            scale = len(values) * dx
+            plt.plot(x, mlab.normpdf(x, gaussian_mus[i], gaussian_sigmas[i]) * scale)
     if title:
         ax.set_title(title)
     if should_logy:
@@ -118,11 +126,14 @@ def multiviolin_fromxy(xvals, yvals, title=None, minforplot=2):
     return multiviolin(valueses, title, labels)
 
 
-def multiviolin(valueses, title=None, labels=None):
+def multiviolin(valueses, title=None, labels=None, y_axis_limits=None):
     """multiple violin plots side by side"""
     figure = plt.figure()
 
     ax = figure.add_subplot(1, 1, 1)
+
+    if y_axis_limits is not None:
+        plt.ylim(y_axis_limits)
 
     violin_plot(ax, valueses, range(len(valueses)))
 
@@ -156,7 +167,7 @@ def violin_plot(ax, data, pos, bp=True, color='y'):
         ax.fill_betweenx(x, p, v + p, facecolor=color, alpha=0.3)
         ax.fill_betweenx(x, p, -v + p, facecolor=color, alpha=0.3)
     if bp:
-        ax.boxplot(data, notch=1, positions=pos, vert=1)
+        ax.boxplot(data, notch=0, positions=pos, vert=1)
 
 
 def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
