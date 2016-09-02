@@ -51,7 +51,7 @@ def read_scans(mzml_file, ms_levels=(1, 2)):
     """
     with mzml.MzML(mzml_file) as reader:
         for scan in reader:
-            if scan['ms level' in ms_levels]:
+            if scan['ms level'] in ms_levels:
                 yield read_scan(scan)
 
 

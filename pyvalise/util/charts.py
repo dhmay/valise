@@ -733,12 +733,19 @@ class BigHistData:
         self.max_real_value = float('-inf')
 
     def add_value(self, value):
-        cropped_value = max(self.min_shown_value, min(value, self.max_shown_value))
-        bin_idx = int((cropped_value - self.min_shown_value) / self.binsize)
+        bin_idx = self.calc_idx_for_value(value)
         #print("add_value, value=%f, bin=%d, binsize=%f, minval=%f" % (cropped_value, bin_idx, self.binsize, self.min_shown_value))
         self.countdata[bin_idx] += 1
         self.min_real_value = min(value, self.min_real_value)
         self.max_real_value = max(value, self.max_real_value)
+
+    def get_count_for_value(self, value):
+        return self.countdata[self.calc_idx_for_value(value)]
+
+    def calc_idx_for_value(self, value):
+        cropped_value = max(self.min_shown_value, min(value, self.max_shown_value))
+        bin_idx = int((cropped_value - self.min_shown_value) / self.binsize)
+        return bin_idx
 
     def generate_xvals(self):
         return [self.min_shown_value + self.binsize * bin_idx for bin_idx in xrange(0, self.n_bins)]

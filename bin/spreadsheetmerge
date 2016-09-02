@@ -42,6 +42,7 @@ def main():
                         help='log-transform values?')
     parser.add_argument('--plotxlabel',  help='x label for plot')
     parser.add_argument('--plotylabel',  help='y label for plot')
+    parser.add_argument('--plotdotsize',  type=int, default=2, help='dot size for scatterplots')
     parser.add_argument('--plotabline',  action="store_true", help='plot a 1:1 line?', default=False)
     parser.add_argument('--plotneglog10', action="store_true",
                         help='transform values as negative log10?')
@@ -198,7 +199,7 @@ def main():
             if args.plotylabel:
                 ylabel=args.plotylabel
             mycharts.append(charts.scatterplot(xvals, yvals, title=title, xlabel=xlabel, ylabel=ylabel,
-                                               draw_1to1=args.plotabline))
+                                               draw_1to1=args.plotabline, pointsize=args.plotdotsize))
         charts.write_pdf(mycharts, args.outpdf)
         print("Wrote charts to %s" % args.outpdf.name)
     if args.outplottsv:
