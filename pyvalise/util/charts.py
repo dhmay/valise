@@ -9,7 +9,6 @@ matplotlib.use('Agg')
 import logging
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from statsmodels.graphics import gofplots
 import statsmodels.api as sm
 from pyvalise.util import stats as pyptide_stats
@@ -18,6 +17,7 @@ from numpy import arange
 from matplotlib import colors
 import numpy as np
 import matplotlib.mlab as mlab
+from matplotlib.lines import Line2D
 
 
 
@@ -49,6 +49,18 @@ for i in xrange(0, 20):
     COLORS.extend(BASE_COLORS)
 
 COLORMAP_BASECOLORS = colors.ListedColormap(BASE_COLORS)
+
+
+BASE_MARKERS = []
+for m in Line2D.markers:
+    try:
+        if len(m) == 1 and m != ' ':
+            BASE_MARKERS.append(m)
+    except TypeError:
+        pass
+MARKERS = []
+for i in xrange(0, 10):
+    MARKERS.extend(BASE_MARKERS)
 
 
 DEFAULT_HIST_BINS = 40
@@ -289,7 +301,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-              diff_yaxis_scales=False, y_axis_limits=None):
+              diff_yaxis_scales=False, y_axis_limits=None, show_markers=False):
     """
 
     :param x_valueses:
@@ -321,16 +333,19 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         if diff_yaxis_scales and i == 1:
             ax = ax.twinx()
             axes.append(ax)
+        marker = None
+        if show_markers:
+            marker = MARKERS[i]
         if labels:
             if linestyles:
-                ax.plot(x_values, y_values, color=color, label=labels[i], linestyle=linestyles[i])
+                ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker, linestyle=linestyles[i])
             else:
-                ax.plot(x_values, y_values, color=color, label=labels[i])
+                ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker)
         else:
             if linestyles:
-                ax.plot(x_values, y_values, color=color, linestyle=linestyles[i])
+                ax.plot(x_values, y_values, color=color, linestyle=linestyles[i], marker=marker)
             else:
-                ax.plot(x_values, y_values, color=color)
+                ax.plot(x_values, y_values, color=color, marker=marker)
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)
     if title:
