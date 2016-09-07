@@ -43,6 +43,7 @@ BASE_COLORS = ['#0000ff',  # blue
                '#ff00ff',  # purple
                '#FFFF00',  # brown?
                '#222222',  # dark grey
+               '#FFA500',  # orange
                ]
 COLORS = []
 for i in xrange(0, 20):
@@ -301,7 +302,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-              diff_yaxis_scales=False, y_axis_limits=None, show_markers=False):
+              diff_yaxis_scales=False, y_axis_limits=None, show_markers=False, markers=None):
     """
 
     :param x_valueses:
@@ -326,6 +327,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     axes = [ax]
     if not colors:
         colors = COLORS[0:len(x_valueses)]
+    if not markers:
+        markers = MARKERS[0:len(x_valueses)]
     for i in xrange(0, len(x_valueses)):
         x_values = x_valueses[i]
         y_values = y_valueses[i]
@@ -335,7 +338,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
             axes.append(ax)
         marker = None
         if show_markers:
-            marker = MARKERS[i]
+            marker = markers[i]
         if labels:
             if linestyles:
                 ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker, linestyle=linestyles[i])
