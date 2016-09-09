@@ -28,6 +28,8 @@ ALPHA_FOR_MULTISCATTER = 0.85
 
 DEFAULT_POINTSIZE = 1
 
+DEFAULT_AXIS_TICK_FONTSIZE = 20
+
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2012-2014 Damon May"
 __license__ = ""
@@ -79,7 +81,7 @@ def write_pdf(figures, pdf_file):
 
 def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
          should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-         gaussian_mus=None, gaussian_sigmas=None):
+         gaussian_mus=None, gaussian_sigmas=None, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
     """trivial histogram."""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -100,6 +102,7 @@ def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
             plt.plot(x, mlab.normpdf(x, gaussian_mus[i], gaussian_sigmas[i]) * scale)
     if title:
         ax.set_title(title)
+    set_chart_axis_tick_fontsize(ax, axis_tick_font_size)
     if should_logy:
         plt.yscale('log', basey=log_base)
     if should_logx:
@@ -302,7 +305,8 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-              diff_yaxis_scales=False, y_axis_limits=None, show_markers=False, markers=None):
+              diff_yaxis_scales=False, y_axis_limits=None, show_markers=False, markers=None,
+              axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
     """
 
     :param x_valueses:
@@ -349,6 +353,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
                 ax.plot(x_values, y_values, color=color, linestyle=linestyles[i], marker=marker)
             else:
                 ax.plot(x_values, y_values, color=color, marker=marker)
+    set_chart_axis_tick_fontsize(ax, axis_tick_font_size)
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)
     if title:
@@ -467,7 +472,7 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
                 xlabel='', ylabel='', pointsize=1, draw_1to1 = False,
                 colors=None, cmap=None, show_colorbar=False,
                 should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-                alpha=0.5):
+                alpha=0.5, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
     """
     scatter plot
     :param x_values:
@@ -497,6 +502,7 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
         ax.plot(lims, lims, 'k-', alpha=0.75, zorder=0)
         ax.set_xlim(lims)
         ax.set_ylim(lims)
+    set_chart_axis_tick_fontsize(ax, axis_tick_font_size)
     if title:
         ax.set_title(title)
     if lowess:
@@ -659,6 +665,11 @@ def add_legend_to_chart(ax, legend_on_chart=False, labels=None, rotate_labels=Fa
 
     for label in legend.get_lines():
         label.set_linewidth(1.5)  # the legend line width
+
+
+def set_chart_axis_tick_fontsize(ax, fontsize):
+    for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontsize(fontsize)
 
 
 def big_hist_line(big_hist_data, xlabel='', ylabel=None, title='', plot_proportion=False):
