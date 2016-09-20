@@ -20,8 +20,7 @@ import matplotlib.mlab as mlab
 from matplotlib.lines import Line2D
 
 
-
-COLORMAP_REDBLUE = plt.get_cmap('bwr')
+COLORMAP_REDBLUE = plt.get_cmap('winter')
 
 DEFAULT_LOG_BASE = 10
 ALPHA_FOR_MULTISCATTER = 0.85

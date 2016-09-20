@@ -88,7 +88,7 @@ def main():
             xvals.append(xval)
             yvals.append(yval)
             if args.colorcolumn:
-                colorvals.append(int(row[args.colorcolumn]))
+                colorvals.append(float(row[args.colorcolumn]))
     mycharts = []
     if args.outpdf:
         print("Building charts...")
@@ -113,30 +113,44 @@ def main():
         if args.ylabel:
             ylabel = args.ylabel
         if args.colorcolumn:
-            labels = None
             if args.colorlabels:
                 labels = args.colorlabels.split(',')
-            color_xvals_map = dict()
-            color_yvals_map = dict()
-            for i in xrange(0, len(xvals)):
-                color = colorvals[i]
-                if color not in color_xvals_map:
-                    color_xvals_map[color] = []
-                    color_yvals_map[color] = []
-                color_xvals_map[color].append(xvals[i])
-                color_yvals_map[color].append(yvals[i])
-            xvalses = [color_xvals_map[color] for color in color_xvals_map]
-            yvalses = [color_yvals_map[color] for color in color_xvals_map]
-            mycharts.append(charts.multiscatter(xvalses, yvalses, title=title,
-                                               xlabel=xlabel,
-                                               ylabel=ylabel,
-                                               should_logx=args.plotlogx,
-                                               should_logy=args.plotlogy,
-                                               log_base=args.logbase,
-                                               colors=charts.BASE_COLORS,
-                                               draw_1to1=args.plotabline,
-                                                pointsize=args.pointsize,
-                                                labels=labels))
+                color_xvals_map = dict()
+                color_yvals_map = dict()
+                for i in xrange(0, len(xvals)):
+                    color = colorvals[i]
+                    if color not in color_xvals_map:
+                        color_xvals_map[color] = []
+                        color_yvals_map[color] = []
+                    color_xvals_map[color].append(xvals[i])
+                    color_yvals_map[color].append(yvals[i])
+                xvalses = [color_xvals_map[color] for color in color_xvals_map]
+                yvalses = [color_yvals_map[color] for color in color_xvals_map]
+                mycharts.append(charts.multiscatter(xvalses, yvalses, title=title,
+                                                   xlabel=xlabel,
+                                                   ylabel=ylabel,
+                                                   should_logx=args.plotlogx,
+                                                   should_logy=args.plotlogy,
+                                                   log_base=args.logbase,
+                                                   colors=charts.BASE_COLORS,
+                                                   draw_1to1=args.plotabline,
+                                                   pointsize=args.pointsize,
+                                                   labels=labels))
+            else:
+                max_colorval = max(colorvals)
+                min_colorval = min(colorvals)
+                colors = [(colorvals[i] - min_colorval) / (max_colorval - min_colorval) for i in xrange(0, len(colorvals))]
+                mycharts.append(charts.scatterplot(xvals, yvals, title=title,
+                                                   xlabel=xlabel,
+                                                   ylabel=ylabel,
+                                                   should_logx=args.plotlogx,
+                                                   should_logy=args.plotlogy,
+                                                   log_base=args.logbase,
+                                                   colors=colors,
+                                                   cmap=charts.COLORMAP_REDBLUE,
+                                                   draw_1to1=args.plotabline,
+                                                   pointsize=args.pointsize))
+
         else:
             mycharts.append(charts.scatterplot(xvals, yvals, title=title,
                                                xlabel=xlabel,
