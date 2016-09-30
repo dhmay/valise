@@ -37,7 +37,7 @@ def retrieve_scans(mzml_file, scan_numbers):
 
 
 def read_ms2_scans(mzml_file):
-    return read_scans(mzml_file, [2])
+    return read_scans(mzml_file, ms_levels=[2])
 
 
 def read_scans(mzml_file, ms_levels=(1, 2)):
@@ -68,7 +68,7 @@ def read_scan(scan):
     intensity_array = scan['intensity array']
     retention_time = scan['scanList']['scan'][0]['scan start time']
     if ms_level == 1:
-        return spectra.MSSpectrum(scan_number, retention_time,
+        return spectra.MSSpectrum(scan_number, retention_time, ms_level,
                                   mz_array,
                                   intensity_array)
     elif ms_level == 2:

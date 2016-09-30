@@ -32,7 +32,8 @@ def retrieve_scans(ms2_file, scan_numbers, precursor_from_zline=True, should_cal
     :param should_calc_zs_mz_diffs:
     :return:
     """
-    for scan in read_scans(ms2_file):
+    for scan in read_scans(ms2_file, precursor_from_zline=precursor_from_zline,
+                           should_calc_zs_mz_diffs=should_calc_zs_mz_diffs):
         if scan.scan_number in scan_numbers:
             yield scan
 
