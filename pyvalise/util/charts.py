@@ -78,6 +78,16 @@ def write_pdf(figures, pdf_file):
             plot.savefig(pdf, format='pdf')
 
 
+def write_png(figure, png_file):
+    """
+    Write a figure to a .png
+    :param figure:
+    :param png_file:
+    :return:
+    """
+    figure.savefig(png_file, format='png')
+
+
 def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
          should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
          gaussian_mus=None, gaussian_sigmas=None, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
