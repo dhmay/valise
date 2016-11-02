@@ -117,6 +117,10 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
             else:
                 logger.debug("Incomplete scan!")
 
+            # new scan, so reset mz and intensity lists
+            fragment_mzs = []
+            fragment_intensities = []
+
             in_preamble = False
             precursor_mz = float(chunks[3])
             scan_number = int(chunks[1])
