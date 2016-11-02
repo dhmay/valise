@@ -55,7 +55,10 @@ def main():
     if args.append:
         print("Writing original entries...")
         for record in fasta_io.load_fasta_records(args.infile):
-            fasta_io.write_record_to_fasta(record, args.out)
+            protseq = str(record.seq)
+            if protseq.endswith("*"):
+                protseq = protseq[0:len(protseq) - 1]
+            fasta_io.write_protein_name_seq_to_fasta(record.name, protseq, args.out)
         args.infile = open(args.infile.name)
         print("Done writing original entries.")
     for record in fasta_io.load_fasta_records(args.infile):
@@ -64,6 +67,9 @@ def main():
             logger.debug("Processed %d" % n_total_proteins)
             sys.stdout.flush()
         protseq = str(record.seq)
+        if protseq.endswith("*"):
+            protseq = protseq[0:len(protseq) - 1]
+        protseq = protseq[::-1]
         fasta_io.write_protein_name_seq_to_fasta(args.prefix + record.name, protseq, args.out)
     args.out.close()
     print("Wrote file %s" % args.out.name)
