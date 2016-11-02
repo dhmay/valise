@@ -111,8 +111,6 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
                     logger.debug("Yielded #%d" % n_yielded)
                 # zero out everything not on this line so that we know if we got it for the next scan
                 charge = None
-                fragment_mzs = []
-                fragment_intensities = []
 
             else:
                 logger.debug("Incomplete scan!")
