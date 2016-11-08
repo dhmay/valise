@@ -120,10 +120,14 @@ def main():
             if not vals1:
                 print("   no common values.")
                 continue
-            ratios_1_2 = [vals1[i] / vals2[i] for i in xrange(0, len(vals1))]
-            geomean_1_2 = mstats.gmean(ratios_1_2)
-            print("    Geom mean ratio 1:2 = %f" % geomean_1_2)
-            print("    Geom mean ratio 2:1 = %f" % (1.0 / geomean_1_2))
+            try:
+                ratios_1_2 = [vals1[i] / vals2[i] for i in xrange(0, len(vals1))]
+                geomean_1_2 = mstats.gmean(ratios_1_2)
+                print("    Geom mean ratio 1:2 = %f" % geomean_1_2)
+                print("    Geom mean ratio 2:1 = %f" % (1.0 / geomean_1_2))
+            except Exception as e:
+                print("Failed to calculate ratios. Probably div by 0.")
+                print(str(e))
 
     if args.outplottsv:
         plotcolumn = plotcolumns[0]
