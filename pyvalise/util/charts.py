@@ -255,7 +255,6 @@ def multibar(valueses, labels, title='', colors=None,
              axis_limits=None):
     """barchart of multiple datasets.
     valueses: a list of lists of values. Should have same cardinalities"""
-    print(axis_limits)
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if not colors:
