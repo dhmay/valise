@@ -118,14 +118,14 @@ def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
         plt.xscale('log', basex=log_base)
     return figure
 
-def multiboxplot(valueses, title=None, labels=None):
+def multiboxplot(valueses, title=None, labels=None, show_outliers=True):
     """multiple boxplots side by side"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
-    ax.boxplot(valueses)
+    ax.boxplot(valueses, showfliers=show_outliers)
     tick_locs = list()
     for i in xrange(0, len(valueses)):
-        tick_locs.append(i)
+        tick_locs.append(i + 1)
 
     if labels:
         plt.xticks(tick_locs, labels)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-scatterplot two spreadsheet columns against each other
+lineplot one or more columns against an x-axis column
 """
 
 import argparse
