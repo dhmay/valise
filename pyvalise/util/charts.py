@@ -654,9 +654,19 @@ def add_legend_to_chart(ax, legend_on_chart=False, labels=None, rotate_labels=Fa
             legend = ax.legend(bbox_to_anchor=(1.1, 1.05), shadow=True, borderaxespad=0.)
     else:
         logger.debug("Printing legend off chart")
-        # shrink x axis by 40%
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.25, box.width * 0.5, box.height * 0.5])
+        scale_factor = 0.8
+        if labels:
+            MIN_SCALE_FACTOR = 0.5
+            MAX_SCALE_FACTOR = 0.9
+            MIN_LABELLEN = 4
+            MAX_LABELLEN = 30
+            labellen = max([len(label) for label in labels])
+            scale_factor = MIN_SCALE_FACTOR + \
+                           float(MAX_LABELLEN - labellen) / (MAX_LABELLEN - MIN_LABELLEN) * \
+                           (MAX_SCALE_FACTOR - MIN_SCALE_FACTOR)
+        ax.set_position([box.x0, box.y0 + box.height * (1 - scale_factor) / 2, box.width * scale_factor, box.height * scale_factor])
+        set_chart_axis_tick_fontsize(ax, scale_factor * ax.get_xticklabels()[0].get_fontsize())
         if labels:
             legend = ax.legend(labels, loc='center left', bbox_to_anchor=(1, 0.5))
         else:
