@@ -287,13 +287,15 @@ def multibar(valueses, labels, title='', colors=None,
 def line_plot(x_values, y_values, title=None, lowess=False,
               xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-              y_axis_limits=None):
+              y_axis_limits=None, x_axis_limits=None):
     """trivial line plot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     ax.plot(x_values, y_values)
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)
+    if x_axis_limits is not None:
+        plt.xlim(y_axis_limits)
     if lowess:
         lowess = sm.nonparametric.lowess(y_values, x_values, frac=0.1)
         ax.plot(lowess[:, 0], lowess[:, 1])
@@ -313,7 +315,8 @@ def line_plot(x_values, y_values, title=None, lowess=False,
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-              diff_yaxis_scales=False, y_axis_limits=None, show_markers=False, markers=None,
+              diff_yaxis_scales=False, x_axis_limits=None, y_axis_limits=None,
+              show_markers=False, markers=None,
               axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
     """
 
@@ -330,6 +333,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     :param should_logy:
     :param log_base:
     :param diff_yaxis_scales: use different y-axis scales. Only valid for len(y_valueses)==2
+    :param x_axis_limits:
+    :param y_axis_limits:
     :return:
     """
     if diff_yaxis_scales and len(y_valueses) != 2:
@@ -364,6 +369,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     set_chart_axis_tick_fontsize(ax, axis_tick_font_size)
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)
+    if x_axis_limits is not None:
+        plt.xlim(x_axis_limits)
     if title:
         ax.set_title(title)
     # Now add the legend with some customizations.
