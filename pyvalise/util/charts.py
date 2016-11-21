@@ -18,6 +18,7 @@ from matplotlib import colors
 import numpy as np
 import matplotlib.mlab as mlab
 from matplotlib.lines import Line2D
+from scipy.stats import cumfreq
 
 
 COLORMAP_REDBLUE = plt.get_cmap('winter')
@@ -310,6 +311,8 @@ def line_plot(x_values, y_values, title=None, lowess=False,
     return figure
 
 
+
+
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
@@ -383,7 +386,33 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     return figure
 
 
+def cdfs(valueses, xlabel='value', labels=None, title='CDF', n_bins=500):
+    """
+    Plot one or more cumulative density functions
+    :param valueses:
+    :param xlabel:
+    :param labels:
+    :param title:
+    :param n_bins:
+    :return:
+    """
+    x_valueses = []
+    y_valueses = []
+    logger.debug("cdfs")
+    for values in valueses:
+        freq = cumfreq(values, n_bins)
+        x_values = [freq.lowerlimit + x * freq.binsize for x in xrange(0, n_bins)]
+        y_values = freq.cumcount / len(values)
+        logger.debug("binsize: %f" % freq.binsize)
+        logger.debug("range: %f" % (freq.binsize * n_bins))
+        x_valueses.append(x_values)
+        y_valueses.append(y_values)
 
+    return multiline(x_valueses, y_valueses,
+                     title=title,
+                     xlabel=xlabel,
+                     ylabel='density',
+                     labels=labels)
 
 
 def multiscatter(x_valueses, y_valueses, title=None,
