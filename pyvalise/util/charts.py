@@ -19,6 +19,7 @@ import numpy as np
 import matplotlib.mlab as mlab
 from matplotlib.lines import Line2D
 from scipy.stats import cumfreq
+from mpl_toolkits.mplot3d import axes3d, Axes3D
 
 
 COLORMAP_REDBLUE = plt.get_cmap('winter')
@@ -646,16 +647,43 @@ def surface(x_values, y_values, z_values, title=None,
 def scatter3d(x_values, y_values, z_values, title=None,
                 xlabel='', ylabel='', zlabel='', pointsize=1, alpha=0.5,
                 colors=None, should_logx=False, should_logy=False, cmap=None,
-              log_base=DEFAULT_LOG_BASE, show_colorbar=False):
-    """3D scatterplot"""
+              log_base=DEFAULT_LOG_BASE, show_colorbar=False, lines_coords=None):
+    """
+    3D scatterplot. Right now there's some special-purpose stuff in her for overlaying lines
+    :param x_values:
+    :param y_values:
+    :param z_values:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param zlabel:
+    :param pointsize:
+    :param alpha:
+    :param colors:
+    :param should_logx:
+    :param should_logy:
+    :param cmap:
+    :param log_base:
+    :param show_colorbar:
+    :param lines_coords:
+    :return:
+    """
     figure = plt.figure()
-    # ax = Axes3D(figure)
-    ax = figure.add_subplot(111, projection='3d')
+    ax = Axes3D(figure)
+    #ax = figure.add_subplot(111, projection='3d')
     myscatter = None
-    if colors:
-        myscatter = ax.scatter(x_values, y_values, z_values, s=pointsize, c=colors, alpha=alpha, cmap=cmap, edgecolors='none')
+    print("pointsize: %d" % pointsize)
+    marker_args = dict(s=pointsize, alpha=alpha, cmap=cmap, linewidths=0,)
+    if colors is not None:
+        myscatter = Axes3D.scatter(ax, x_values, y_values, z_values, c=colors, **marker_args)
     else:
-        myscatter = ax.scatter(x_values, y_values, z_values, s=pointsize, alpha=alpha, cmap=cmap, edgecolors='none')
+        myscatter = Axes3D.scatter(ax, x_values, y_values, z_values, **marker_args)
+    if lines_coords is not None:
+        for line_coords in lines_coords:
+            Axes3D.plot(ax, [x[0] for x in line_coords],
+                        [x[1] for x in line_coords],
+                        zs=[x[2] for x in line_coords],
+                        c='#888888', alpha=0.35, linewidth=0.3)
 
     if should_logx:
         plt.xscale('log', basex=log_base)
