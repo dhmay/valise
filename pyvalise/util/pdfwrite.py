@@ -4,17 +4,16 @@ Utilities for writing stuff to PDFs. Depends on reportlab
 """
 
 import logging
+import cStringIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Flowable
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.utils import ImageReader
 
 log = logging.getLogger(__name__)
 
 DEFAULT_ROWHEIGHT = 0.5
-
-
-def create_pdf(filepath):
-    return SimpleDocTemplate(filepath, pagesize=letter)
 
 
 def make_table(data, columnwidths=None, rowheights=None,
@@ -55,6 +54,54 @@ def make_table(data, columnwidths=None, rowheights=None,
     return t
 
 
-def build_pdf(pdf_doc, elements):
+class PdfImage(Flowable):
+
+    def __init__(self, img_data, width_inches=5, height_inches=4):
+        self.img_width = width_inches * inch
+        self.img_height = height_inches * inch
+        self.img_data = img_data
+
+    def wrap(self, width, height):
+        return self.img_width, self.img_height
+
+    def drawOn(self, canv, x, y, _sW=0):
+        if _sW > 0 and hasattr(self, 'hAlign'):
+            a = self.hAlign
+            if a in ('CENTER', 'CENTRE', TA_CENTER):
+                x += 0.5*_sW
+            elif a in ('RIGHT', TA_RIGHT):
+                x += _sW
+            elif a not in ('LEFT', TA_LEFT):
+                raise ValueError("Bad hAlign value " + str(a))
+        canv.saveState()
+        img = self.img_data
+        # for later, after I get pdfrw working
+#        if isinstance(img, PdfDict):
+#            xscale = self.img_width / img.BBox[2]
+#            yscale = self.img_height / img.BBox[3]
+#            canv.translate(x, y)
+#            canv.scale(xscale, yscale)
+#            canv.doForm(makerl(canv, img))
+#        else:
+        canv.drawImage(img, x, y, self.img_width, self.img_height)
+        canv.restoreState()
+
+
+def make_element_from_figure(figure, width_inches=7, height_inches=5):
+    # for pdfrw
+    #fig.savefig(imgdata, format='pdf' if use_pdfrw else 'png')
+    imgdata = cStringIO.StringIO()
+    figure.savefig(imgdata, format='png')
+    imgdata.seek(0)
+    # for pdfr2
+    #reader = form_xo_reader if use_pdfrw else ImageReader
+    reader = ImageReader
+    image = reader(imgdata)
+    img = PdfImage(image, width_inches=width_inches, height_inches=height_inches)
+    return img
+
+
+def build_pdf(elements, filepath):
+    pdf_doc = SimpleDocTemplate(filepath, pagesize=letter)
     pdf_doc.build(elements)
 
