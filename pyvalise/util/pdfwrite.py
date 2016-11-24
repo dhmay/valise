@@ -7,7 +7,7 @@ import logging
 import cStringIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Flowable
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Flowable, PageBreak
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.lib.utils import ImageReader
 
@@ -101,7 +101,34 @@ def make_element_from_figure(figure, width_inches=7, height_inches=5):
     return img
 
 
+def build_pdf_withpagebreaks(elements, filepath):
+    """
+    Build a pdf, inserting page breaks between each pair of elements.
+    Special behavior: if an element is a list, unpack it, putting all the elements on the page
+    :param elements:
+    :param filepath:
+    :return:
+    """
+    elements_with_pagebreaks = []
+    for i in xrange(0, len(elements)):
+        # if elements[i] is a list, unpack the list and add all the items.
+        # otherwise, just add the item
+        if type(elements[i]) == list:
+            elements_with_pagebreaks.extend(elements[i])
+        else:
+            elements_with_pagebreaks.append(elements[i])
+        if i < len(elements) - 1:
+            elements_with_pagebreaks.append(PageBreak())
+    build_pdf(elements_with_pagebreaks, filepath)
+
+
 def build_pdf(elements, filepath):
+    """
+    build a pdf
+    :param elements:
+    :param filepath:
+    :return:
+    """
     pdf_doc = SimpleDocTemplate(filepath, pagesize=letter)
     pdf_doc.build(elements)
 
