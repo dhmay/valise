@@ -7,7 +7,7 @@ See comments at the bottom for example file contents
 """
 
 import logging
-from pyvalise.proteomics import spectra
+from pyvalise.proteomics import spectra, peptides
 from pyvalise.util import charts
 import numpy as np
 import datetime
@@ -18,9 +18,6 @@ __license__ = ""
 __version__ = ""
 
 logger = logging.getLogger(__name__)
-
-# mass of a hydrogen atom
-HYDROGEN_MASS = 1.00794
 
 
 def retrieve_scans(ms2_file, scan_numbers, precursor_from_zline=True, should_calc_zs_mz_diffs=False):
@@ -135,7 +132,7 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
             z_precursor_mplush = float(chunks[2])
             
             if charge != 0:
-                zline_precursor_mz = (z_precursor_mplush - HYDROGEN_MASS) / charge + HYDROGEN_MASS
+                zline_precursor_mz = peptides.calc_mz_from_mplush_charge(z_precursor_mplush, charge)
             if should_calc_zs_mz_diffs:
                 if abs(zline_precursor_mz - precursor_mz) > 0.5:
                     pass
@@ -143,7 +140,7 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
 
                     if (abs((zline_precursor_mz - precursor_mz) * charge)) > 0.5:
                         print("%d    %f    %f" % (scan_number, (zline_precursor_mz - precursor_mz) * charge,
-                                            ((zline_precursor_mz - precursor_mz) * charge) % HYDROGEN_MASS))
+                                            ((zline_precursor_mz - precursor_mz) * charge) % peptides.HYDROGEN_MASS))
                 diff_mod = abs((zline_precursor_mz - precursor_mz) * charge) % 1.000495
                 while diff_mod > 1.000495 / 2:
                     diff_mod -= 1.000495
@@ -222,7 +219,7 @@ def write_scan(ms2_spectrum, outfile):
     outfile.write("S\t%d\t%d\t%f\n" % (ms2_spectrum.scan_number, ms2_spectrum.scan_number,
                                      ms2_spectrum.precursor_mz))
     outfile.write("I\tRTime\t%f\n" % ms2_spectrum.retention_time)
-    zline_mplush = (ms2_spectrum.precursor_mz - HYDROGEN_MASS) * ms2_spectrum.charge + HYDROGEN_MASS
+    zline_mplush = peptides.calc_mplush_from_mz_charge(ms2_spectrum.precursor_mz,  ms2_spectrum.charge)
     outfile.write("Z\t%d\t%f\n" % (ms2_spectrum.charge, zline_mplush))
     for i in xrange(0, len(ms2_spectrum.intensity_array)):
         outfile.write("%s %s\n" % (ms2_spectrum.mz_array[i], ms2_spectrum.intensity_array[i]))

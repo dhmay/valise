@@ -27,6 +27,9 @@ all_amino_acids = [
     'P', 'S', 'T', 'W', 'Y', 'V'
 ]
 
+# mass of a hydrogen atom
+HYDROGEN_MASS = 1.00794
+
 # dictionary from amino acid symbols to positions in all_amino_acids
 all_aa_pos_dict = dict()
 for i in xrange(0, len(all_amino_acids)):
@@ -631,6 +634,50 @@ def calc_monoisotopic_mass(modified_pep_sequence, modified_mass_dict):
     return massUtil.calculate_mass(modified_pep_sequence,
                                aa_comp=modified_mass_dict)
 
+
 def get_aa_mass(aa):
     """convenience method to get the monoisotopic mass of an amino acid"""
     return pyteomics_mass.std_aa_mass[aa]
+
+
+def calc_mz_from_neutralmass_charge(neutral_mass, charge):
+    """
+    Given a neutral mass and a charge, calculate mz
+    :param neutral_mass:
+    :param charge:
+    :return:
+    """
+    return neutral_mass / charge + HYDROGEN_MASS
+
+
+def calc_mz_from_mplush_charge(m_plus_h, charge):
+    """
+    Given an M+H and a charge, calculate mz
+    :param m_plus_h:
+    :param charge:
+    :return:
+    """
+    return calc_mz_from_neutralmass_charge(m_plus_h - HYDROGEN_MASS, charge)
+
+
+def calc_neutralmass_from_mz_charge(mz, charge):
+    """
+    Given an mz and a charge, calculate the neutral mass of the ion
+    :param mz:
+    :param charge:
+    :return:
+    """
+    return (mz - HYDROGEN_MASS) * charge
+
+
+def calc_mplush_from_mz_charge(mz, charge):
+    """
+    Given an mz and a charge, calculate the M+H mass of the ion
+    :param mz:
+    :param charge:
+    :return:
+    """
+    return calc_neutralmass_from_mz_charge(mz, charge) + HYDROGEN_MASS
+
+
+
