@@ -672,7 +672,6 @@ def scatter3d(x_values, y_values, z_values, title=None,
     ax = Axes3D(figure)
     #ax = figure.add_subplot(111, projection='3d')
     myscatter = None
-    print("pointsize: %d" % pointsize)
     marker_args = dict(s=pointsize, alpha=alpha, cmap=cmap, linewidths=0,)
     if colors is not None:
         myscatter = Axes3D.scatter(ax, x_values, y_values, z_values, c=colors, **marker_args)
