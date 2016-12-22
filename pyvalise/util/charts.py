@@ -153,7 +153,8 @@ def multiviolin_fromxy(xvals, yvals, title=None, minforplot=2):
     return multiviolin(valueses, title, labels)
 
 
-def multiviolin(valueses, title=None, labels=None, y_axis_limits=None):
+def multiviolin(valueses, title=None, labels=None, y_axis_limits=None,
+                rotate_labels=False):
     """multiple violin plots side by side"""
     figure = plt.figure()
 
@@ -164,12 +165,16 @@ def multiviolin(valueses, title=None, labels=None, y_axis_limits=None):
 
     violin_plot(ax, valueses, range(len(valueses)))
 
-    tick_locs = list()
-    for i in xrange(0, len(valueses)):
-        tick_locs.append(i)
 
     if labels:
-        plt.xticks(tick_locs, labels)
+        tick_xs = [x for x in xrange(0, len(labels))]
+        locs, ticklabels = plt.xticks(tick_xs, labels)
+        if rotate_labels:
+            logger.debug("Rotating tick labels 90 degrees.")
+            plt.setp(ticklabels, rotation=90)
+            # also, shrink the chart vertically to make room
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.6])
 
     if title:
         ax.set_title(title)
@@ -590,6 +595,26 @@ def pie(values, title=None, labels=None,
         ax.set_title(title)
     return figure
 
+
+def heatmap_direct(values_ndarray, xlabel=None, ylabel=None, title=None,
+                   show_colorbar=True, colormap=None, width_proportion=1.0, height_proportion=1.0):
+    figure = plt.figure()
+    ax = figure.add_subplot(1, 1, 1)
+    cax = ax.imshow(values_ndarray, cmap=colormap,
+                   vmin=values_ndarray.min(), vmax=values_ndarray.max())
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if title:
+        ax.set_title(title)
+    if show_colorbar:
+        figure.colorbar(cax)
+#    # scale the heatmap's size
+#    box = ax.get_position()
+#    ax.set_position([box.x0 + box.width * (1.0 - width_proportion), box.y0 + box.height * (1.0 - height_proportion),
+#                     box.width * width_proportion, box.height * height_proportion])
+    return figure
 
 def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
             ytick_positions=None, ylabels=None, colormap='gray',
