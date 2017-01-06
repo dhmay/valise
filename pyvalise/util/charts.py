@@ -51,6 +51,10 @@ BASE_COLORS = ['#0000ff',  # blue
 COLORS = []
 for i in xrange(0, 20):
     COLORS.extend(BASE_COLORS)
+LINESTYLES = []
+while len(LINESTYLES) < len(COLORS):
+    for linestyle in ['solid', 'dashed', 'dashdot', 'dotted']:
+            LINESTYLES.extend([linestyle] * len(BASE_COLORS))
 
 COLORMAP_BASECOLORS = colors.ListedColormap(BASE_COLORS)
 
@@ -355,6 +359,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         colors = COLORS[0:len(x_valueses)]
     if not markers:
         markers = MARKERS[0:len(x_valueses)]
+    if not linestyles:
+        linestyles = LINESTYLES[0:len(x_valueses)]
     for i in xrange(0, len(x_valueses)):
         x_values = x_valueses[i]
         y_values = y_valueses[i]
@@ -366,15 +372,9 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         if show_markers:
             marker = markers[i]
         if labels:
-            if linestyles:
-                ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker, linestyle=linestyles[i])
-            else:
-                ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker)
+            ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker, linestyle=linestyles[i])
         else:
-            if linestyles:
-                ax.plot(x_values, y_values, color=color, linestyle=linestyles[i], marker=marker)
-            else:
-                ax.plot(x_values, y_values, color=color, marker=marker)
+            ax.plot(x_values, y_values, color=color, linestyle=linestyles[i], marker=marker)
     set_chart_axis_tick_fontsize(ax, axis_tick_font_size)
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)
