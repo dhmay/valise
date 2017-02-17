@@ -330,7 +330,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
               diff_yaxis_scales=False, x_axis_limits=None, y_axis_limits=None,
               show_markers=False, markers=None,
-              axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
+              axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
+              draw_1to1=False):
     """
 
     :param x_valueses:
@@ -361,6 +362,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         markers = MARKERS[0:len(x_valueses)]
     if not linestyles:
         linestyles = LINESTYLES[0:len(x_valueses)]
+
     for i in xrange(0, len(x_valueses)):
         x_values = x_valueses[i]
         y_values = y_valueses[i]
@@ -375,6 +377,15 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
             ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker, linestyle=linestyles[i])
         else:
             ax.plot(x_values, y_values, color=color, linestyle=linestyles[i], marker=marker)
+    if draw_1to1:
+        min_xval = min(min(xval) for xval in x_valueses)
+        max_xval = max(max(xval) for xval in x_valueses)
+        min_yval = min(min(yval) for yval in y_valueses)
+        max_yval = max(max(yval) for yval in y_valueses)
+        values_1to1 = [max(min_xval,  min_yval), min(max_xval, max_yval)]
+        x_valueses.append(values_1to1)
+        y_valueses.append(values_1to1)
+        ax.plot(values_1to1, values_1to1, color='#666666', linestyle='dotted')
     set_chart_axis_tick_fontsize(ax, axis_tick_font_size)
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)

@@ -48,19 +48,21 @@ def read_ms2_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=
 
 
 def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=False,
-               require_rt=False):
+               require_rt=False, should_renumber_if_needed=False):
     """
     yield all scans in the file at ms2_filepath
     :param ms2_file:
     :param precursor_from_zline:
     :param should_calc_zs_mz_diffs:
     :param require_rt:
+    :param should_renumber_if_needed: Should we renumber the scans if they're all numbered 0?
+    Alternatively, refuse to yield scans with scan number 0.
     :return:
     """
 
     # store the values we care about for the current scan
     precursor_mz = None
-    scan_number = None
+    scan_number = 0
     retention_time = None
     charge = None
     fragment_mzs = []
@@ -70,7 +72,8 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
 
     n_yielded = 0
 
-    in_preamble = True
+    # did we actually renumber any scans?
+    renumbered_scans = False
 
     # differences in m/z between that on the s-line and that calculated from the z-line
     zline_sline_precursor_deltas = []
@@ -116,9 +119,12 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
             fragment_mzs = []
             fragment_intensities = []
 
-            in_preamble = False
             precursor_mz = float(chunks[3])
+            old_scan_number = scan_number
             scan_number = int(chunks[1])
+            if scan_number == 0 and should_renumber_if_needed:
+                renumbered_scans = True
+                scan_number = old_scan_number + 1
 
         elif chunks[0] == "I":
             if chunks[1] == "RTime" or chunks[1] == "RetTime":
@@ -170,6 +176,8 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
         n_yielded += 1
     else:
         logger.debug("Tried to write scan with not all values collected")
+    if renumbered_scans:
+        logger.debug("Renumbered one or more scans.")
     logger.debug("Returned %d spectra" % n_yielded)
 
     # this is for figuring out jus what is up with the Z-line and S-line precursor m/z / mass values
