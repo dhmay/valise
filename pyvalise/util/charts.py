@@ -560,6 +560,7 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
             np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
             np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
         ]
+        logger.debug("scatterplot setting both axis limits to %s" % str(lims))
         ax.plot(lims, lims, 'k-', alpha=0.75, zorder=0)
         ax.set_xlim(lims)
         ax.set_ylim(lims)

@@ -75,6 +75,8 @@ def main():
     plotcolumns = None
     if args.outpdf:
         from pyvalise.util import charts
+        if args.debug:
+            charts.logger.setLevel(logging.DEBUG)
         assert (args.plotcolumns is not None)
 
     if args.plotcolumns:

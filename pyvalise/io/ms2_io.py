@@ -11,6 +11,7 @@ from pyvalise.proteomics import spectra, peptides
 from pyvalise.util import charts
 import numpy as np
 import datetime
+import StringIO
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2012-2014 Fred Hutchinson Cancer Research Center"
@@ -22,14 +23,37 @@ logger = logging.getLogger(__name__)
 
 def retrieve_scans(ms2_file, scan_numbers, precursor_from_zline=True, should_calc_zs_mz_diffs=False):
     """
-    retrieve only the scans in the scan_number list
+    retrieve only the scans in the scan_number list.
+    For a huge performance boost if we're reading a relatively small portion of the file,
+    I'm reading the lines containing just the scans we care about into a buffer, then
+    passing that buffer to read_ms2_scans.
+    That could be made far more memory-efficient by parsing the scans one at a time.
     :param ms2_file:
     :param scan_numbers:
     :param precursor_from_zline:
     :param should_calc_zs_mz_diffs:
     :return:
     """
-    for scan in read_scans(ms2_file, precursor_from_zline=precursor_from_zline,
+    logger.debug("Building buffer with just kept scans...")
+    buffer_with_scans = StringIO.StringIO()
+    is_in_header = True
+    is_in_kept_scan = False
+    n_kept_in_buffer = 0
+    for line in ms2_file:
+        if line.startswith("S"):
+            is_in_header = False
+            chunks = line.split()
+            scan_number = int(chunks[1])
+            if scan_number in scan_numbers:
+                is_in_kept_scan = True
+                n_kept_in_buffer += 1
+            else:
+                is_in_kept_scan = False
+        if is_in_header or is_in_kept_scan:
+            buffer_with_scans.write(line)
+    logger.debug("Built buffer. It has %d scans in it" % n_kept_in_buffer)
+
+    for scan in read_scans(StringIO.StringIO(buffer_with_scans.getvalue()), precursor_from_zline=precursor_from_zline,
                            should_calc_zs_mz_diffs=should_calc_zs_mz_diffs):
         if scan.scan_number in scan_numbers:
             yield scan
@@ -79,6 +103,7 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
     zline_sline_precursor_deltas = []
     zline_sline_masses = []
 
+    is_before_first_scan = True
     for line in ms2_file:
         line_number += 1
         line = line.rstrip()
@@ -113,7 +138,11 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
                 charge = None
 
             else:
-                logger.debug("Incomplete scan!")
+                if not is_before_first_scan:
+                    logger.debug("Incomplete scan!")
+                    logger.debug("scan_number: %s. rt: %s, precursor_mz: %s, charge: %s" %
+                             (scan_number is not None, retention_time is not None,
+                              precursor_mz is not None, charge is not None))
 
             # new scan, so reset mz and intensity lists
             fragment_mzs = []
@@ -125,8 +154,10 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
             if scan_number == 0 and should_renumber_if_needed:
                 renumbered_scans = True
                 scan_number = old_scan_number + 1
+            is_before_first_scan = False
 
         elif chunks[0] == "I":
+            logger.debug("I line: %s" % line)
             if chunks[1] == "RTime" or chunks[1] == "RetTime":
                 retention_time = float(chunks[2])
 
@@ -175,7 +206,10 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
                                   precursor_mz, charge)
         n_yielded += 1
     else:
-        logger.debug("Tried to write scan with not all values collected")
+        logger.debug("Tried to write scan with not all values collected.")
+        logger.debug("scan_number: %s. rt: %s, precursor_mz: %s, charge: %s" %
+                     (scan_number is not None, retention_time is not None,
+                      precursor_mz is not None, charge is not None))
     if renumbered_scans:
         logger.debug("Renumbered one or more scans.")
     logger.debug("Returned %d spectra" % n_yielded)
