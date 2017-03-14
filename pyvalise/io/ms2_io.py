@@ -109,6 +109,8 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
         line = line.rstrip()
         chunks = line.split()
 
+        zline_precursor_mz = None
+
         # ignore these types of lines
         if ((chunks[0] == "H") or
             (chunks[0] == "D")):
@@ -186,7 +188,7 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
                 #zline_sline_precursor_deltas.append(diff_mod)
                 zline_sline_precursor_deltas.append((zline_precursor_mz - precursor_mz) * charge)
                 zline_sline_masses.append(precursor_mz * charge)
-            if precursor_from_zline:
+            if precursor_from_zline and zline_precursor_mz is not None:
                 precursor_mz = zline_precursor_mz
         # must be a peak line or junk
         elif len(chunks) == 4 or len(chunks) == 2:
