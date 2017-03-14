@@ -9,7 +9,6 @@ cimport cython
 from cpython cimport array
 import numpy as np
 cimport numpy as np
-from timeit import default_timer as timer
 
 NDARRAY_DTYPE = np.float32
 ctypedef np.float32_t NDARRAY_DTYPE_t
@@ -26,7 +25,7 @@ def calc_nbins(fragment_min_mz, fragment_max_mz, bin_size):
     :param bin_size:
     :return:
     """
-    return int((fragment_max_mz - fragment_min_mz) / bin_size) + 1
+    return int(float(fragment_max_mz - fragment_min_mz) / float(bin_size)) + 1
 
 
 def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size):
@@ -66,7 +65,7 @@ def bin_spectrum(mz_array, intensity_array,
     cdef int i
     cdef float mz
     cdef float intensity
-    cdef int nbins = calc_nbins(fragment_max_mz, fragment_max_mz, bin_size)
+    cdef int nbins = calc_nbins(fragment_min_mz, fragment_max_mz, bin_size)
     cdef np.ndarray[NDARRAY_DTYPE_t, ndim=2] scan_matrix = np.zeros((1, nbins), dtype=NDARRAY_DTYPE)
 
     for peak_idx in xrange(0, len(mz_array)):
@@ -78,9 +77,6 @@ def bin_spectrum(mz_array, intensity_array,
         if bin_idx < 0 or bin_idx > nbins - 1:
             continue
         scan_matrix[0, bin_idx] = max(scan_matrix[0, bin_idx],  intensity)
-        has_nonzero = True
-    if not has_nonzero:
-        quit("Error! No nonzero bins for scan with %d peaks" % len(mz_array))
     return scan_matrix
 
 
