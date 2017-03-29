@@ -96,7 +96,8 @@ def write_png(figure, png_file):
 
 def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
          should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-         gaussian_mus=None, gaussian_sigmas=None, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
+         gaussian_mus=None, gaussian_sigmas=None, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
+         x_axis_limits=None):
     """trivial histogram."""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -117,6 +118,8 @@ def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
             plt.plot(x, mlab.normpdf(x, gaussian_mus[i], gaussian_sigmas[i]) * scale)
     if title:
         ax.set_title(title)
+    if x_axis_limits is not None:
+        plt.xlim(x_axis_limits)
     set_chart_axis_tick_fontsize(ax, axis_tick_font_size)
     if should_logy:
         plt.yscale('log', basey=log_base)
@@ -167,7 +170,7 @@ def multiviolin(valueses, title=None, labels=None, y_axis_limits=None,
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)
 
-    violin_plot(ax, valueses, range(len(valueses)))
+    _violin_plot(ax, valueses, range(len(valueses)))
 
 
     if labels:
@@ -185,7 +188,12 @@ def multiviolin(valueses, title=None, labels=None, y_axis_limits=None,
     return figure
 
 
-def violin_plot(ax, data, pos, bp=True, color='y'):
+def violin_plot(values, title=None, labels=None, y_axis_limits=None,
+                rotate_labels=False):
+    return multiviolin([values], title, labels, y_axis_limits, rotate_labels)
+
+
+def _violin_plot(ax, data, pos, bp=True, color='y'):
     """
     create violin plots on an axis.
     Borrowed from here:

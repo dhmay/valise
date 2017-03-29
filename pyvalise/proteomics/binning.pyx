@@ -13,6 +13,9 @@ cimport numpy as np
 NDARRAY_DTYPE = np.float32
 ctypedef np.float32_t NDARRAY_DTYPE_t
 
+# default window around each precursor m/z to exclude signal from, when calculating TIC
+DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN = 1.000495 * 2
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +29,7 @@ def calc_nbins(fragment_min_mz, fragment_max_mz, bin_size):
     :return:
     """
     return int(float(fragment_max_mz - fragment_min_mz) / float(bin_size)) + 1
+
 
 
 def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size):
@@ -44,7 +48,9 @@ def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size):
 
 
 def bin_spectrum(mz_array, intensity_array,
-                 float fragment_min_mz, float fragment_max_mz, float bin_size):
+                 float fragment_min_mz, float fragment_max_mz, float bin_size,
+                 float precursor_mz, should_normalize, should_normalize_exclude_precursor,
+                 float window_exclude_precursor_signal=DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN):
     """
     Given an array of m/z values and an array of intensity values for fragment peaks
     from one spectrum, produce a binned representation of the spectrum.
@@ -59,7 +65,11 @@ def bin_spectrum(mz_array, intensity_array,
     :param fragment_min_mz: low end of the m/z range to represent. Values below this limit ignored.
     :param fragment_max_mz: high end of the m/z range to represent. Values below this limit ignored.
     :param bin_size:
-    :return:
+    :param precursor_mz:
+    :param should_normalize:
+    :param should_normalize_exclude_precursor:
+    :param window_exclude_precursor_signal:
+    :return: an ndarray
     """
     cdef int bin_idx, peak_idx
     cdef int i
@@ -67,6 +77,8 @@ def bin_spectrum(mz_array, intensity_array,
     cdef float intensity
     cdef int nbins = calc_nbins(fragment_min_mz, fragment_max_mz, bin_size)
     cdef np.ndarray[NDARRAY_DTYPE_t, ndim=2] scan_matrix = np.zeros((1, nbins), dtype=NDARRAY_DTYPE)
+    cdef float frag_intensity_sum = 0.0
+
 
     for peak_idx in xrange(0, len(mz_array)):
         mz = mz_array[peak_idx]
@@ -76,7 +88,19 @@ def bin_spectrum(mz_array, intensity_array,
         bin_idx = int((mz - fragment_min_mz) / bin_size)
         if bin_idx < 0 or bin_idx > nbins - 1:
             continue
-        scan_matrix[0, bin_idx] = max(scan_matrix[0, bin_idx],  intensity)
+        # if we're not excluding the precursor from TIC, or the peak is sufficiently far from the precursor,
+        # add it to the spectrum intensity sum
+        if (not should_normalize_exclude_precursor) or \
+                (abs(precursor_mz - mz) > window_exclude_precursor_signal):
+            frag_intensity_sum += intensity
+        scan_matrix[0, bin_idx] = max(scan_matrix[0, bin_idx], intensity)
+    if should_normalize:
+        if frag_intensity_sum > 0:
+            # divide intensities by sum
+            scan_matrix /= frag_intensity_sum
+        else:
+            # this can happen if the precursor is the only signal in the spectrum!
+            logger.debug("0-intensity spectrum (excluding precursor)! Precursor: %d" % precursor_mz)
     return scan_matrix
 
 
