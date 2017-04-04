@@ -331,6 +331,24 @@ def line_plot(x_values, y_values, title=None, lowess=False,
     return figure
 
 
+def lineplot_peaks(x_values, y_values, ax=None, color="black", title=None):
+    """
+    Make a lineplot showing peaks at the defined x_values with y_value heights
+    :param x_values:
+    :param y_values:
+    :param ax:
+    :param color:
+    :param title:
+    :return:
+    """
+    x_valueses = []
+    y_valueses = []
+    colors = []
+    for i in xrange(0, len(x_valueses)):
+        x_valueses.extend([x_values[i], x_values[i]])
+        y_valueses.extend([0.0, y_values[i]])
+        colors.append(color)
+    return multiline(x_valueses, y_valueses, ax=ax, title=title, colors=colors)
 
 
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
@@ -339,7 +357,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               diff_yaxis_scales=False, x_axis_limits=None, y_axis_limits=None,
               show_markers=False, markers=None,
               axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
-              draw_1to1=False):
+              draw_1to1=False, ax=None):
     """
 
     :param x_valueses:
@@ -361,8 +379,10 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     """
     if diff_yaxis_scales and len(y_valueses) != 2:
         raise Exception("multiline: diff_yaxis_scales only meaningful if two sets of values.")
-    figure = plt.figure()
-    ax = figure.add_subplot(1, 1, 1)
+    figure = None
+    if ax is None:
+        figure = plt.figure()
+        ax = figure.add_subplot(1, 1, 1)
     axes = [ax]
     if not colors:
         colors = COLORS[0:len(x_valueses)]
