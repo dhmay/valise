@@ -13,8 +13,10 @@ cimport numpy as np
 NDARRAY_DTYPE = np.float32
 ctypedef np.float32_t NDARRAY_DTYPE_t
 
+DEFAULT_BIN_SIZE = 1.000495
+
 # default window around each precursor m/z to exclude signal from, when calculating TIC
-DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN = 1.000495 * 2
+DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN = DEFAULT_BIN_SIZE * 2
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,32 @@ def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size):
     for spectrum in spectra:
         yield bin_spectrum(spectrum.mz_array, spectrum.intensity_array,
                            fragment_min_mz, fragment_max_mz, bin_size)
+
+
+def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz, bin_size):
+    """
+    :param mzs_1:
+    :param mzs_2:
+    :param fragment_min_mz:
+    :param fragment_max_mz:
+    :return: the indexes into mzs_1 that match peaks in mzs_2
+    """
+    mzs_2_bin_set = set()
+    for mz in mzs_2:
+        if mz < fragment_min_mz or mz > fragment_max_mz:
+            continue
+        bin_idx = int((mz - fragment_min_mz) / bin_size)
+        mzs_2_bin_set.add(bin_idx)
+    result = []
+    for i in xrange(0, len(mzs_1)):
+        mz = mzs_1[i]
+        if mz < fragment_min_mz or mz > fragment_max_mz:
+            continue
+        bin_idx = int((mz - fragment_min_mz) / bin_size)
+        if bin_idx in mzs_2_bin_set:
+            result.append(i)
+    return result
+
 
 
 

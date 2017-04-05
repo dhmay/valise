@@ -11,6 +11,7 @@ from pyteomics import achrom
 from pyteomics import electrochem
 from pyteomics import mass as massUtil
 from numpy import median
+import copy
 
 import re
 
@@ -62,6 +63,29 @@ AA_HYDROPHOBICITIES = {'F': 3.7, 'M': 3.4, 'I': 3.1, 'L': 2.8, 'V': 2.6,
                        'C': 2.0, 'W': 1.9, 'A': 1.6, 'T': 1.2, 'G': 1.0,
                        'S': 0.6, 'P': -0.2, 'Y': -0.7, 'H': -3.0, 'Q': -4.1,
                        'N': -4.8, 'E': -8.2, 'K': -8.8, 'D': -9.2, 'R': -12.3}
+
+AA_UNMOD_MASSES = {
+    'A': 71.03711,
+    'C': 103.00919, # note no iodoacetamide
+    'D': 115.02694,
+    'E': 129.04259,
+    'F': 147.06841,
+    'G': 57.02146,
+    'H': 137.05891,
+    'I': 113.08406,
+    'K': 128.09496,
+    'L': 113.08406,
+    'M': 131.04049,
+    'N': 114.04293,
+    'P': 97.05276,
+    'Q': 128.05858,
+    'R': 156.10111,
+    'S': 87.03203,
+    'T': 101.04768,
+    'V': 99.06841,
+    'W': 186.07931,
+    'Y': 163.06333
+}
 
 # Table 4 Measured Molar Extinction Coefficients (214 nm) of protein and peptides from J. Agric Food Chem. Vol. 55. No. 14, 2007
 EXTINCTION_COEFFICIENT = {'P': 2675,'H': 5125,'F': 5200,'Y': 5375,'W': 29050,'M': 980,'R': 102,'N': 136,'Q': 142,
@@ -120,6 +144,31 @@ def is_cleavagepep_good_for_ms(pepseq,
     if pepseq.count('W') > max_cleavage_tryptophans:
         return False
     return True
+
+
+def calc_theoretical_peak_mzs(peptide_sequence, charges, aa_modifications,
+                              min_mz, max_mz):
+    peak_mzs = []
+    aa_mod_masses = copy.deepcopy(AA_UNMOD_MASSES)
+    for aa_mod in aa_modifications:
+        # only supporting static mods for now
+        if not aa_mod.is_variable:
+            aa_mod_masses[aa_mod.aa] += aa_mod.massdiff
+    for charge in charges:
+        b_ion_mass = HYDROGEN_MASS * charge
+        for aa in peptide_sequence[0:-1]:
+            b_ion_mass += AA_UNMOD_MASSES[aa]
+            b_ion_mz = b_ion_mass / charge
+            if min_mz <= b_ion_mz <= max_mz:
+                peak_mzs.append(b_ion_mz)
+
+        y_ion_mass = b_ion_mass + AA_UNMOD_MASSES[peptide_sequence[-1]] + 2 * HYDROGEN_MASS + AminoacidModification.MOD_OXIDATION_MASSDIFF
+        for aa in peptide_sequence[0:-1]:
+            y_ion_mass -= AA_UNMOD_MASSES[aa]
+            y_ion_mz = y_ion_mass / charge
+            if min_mz <= y_ion_mz <= max_mz:
+                peak_mzs.append(y_ion_mz)
+    return peak_mzs
 
 
 def predict_charge(sequence):
