@@ -331,7 +331,8 @@ def line_plot(x_values, y_values, title=None, lowess=False,
     return figure
 
 
-def lineplot_peaks(x_values, y_values, ax=None, color="black", title=None):
+def lineplot_peaks(x_values, y_values, ax=None, color="black", linestyle="solid",
+                   title=None, linewidth=1.0):
     """
     Make a lineplot showing peaks at the defined x_values with y_value heights
     :param x_values:
@@ -343,12 +344,13 @@ def lineplot_peaks(x_values, y_values, ax=None, color="black", title=None):
     """
     x_valueses = []
     y_valueses = []
-    colors = []
-    for i in xrange(0, len(x_valueses)):
-        x_valueses.extend([x_values[i], x_values[i]])
-        y_valueses.extend([0.0, y_values[i]])
-        colors.append(color)
-    return multiline(x_valueses, y_valueses, ax=ax, title=title, colors=colors)
+    for i in xrange(0, len(x_values)):
+        x_valueses.append([x_values[i], x_values[i]])
+        y_valueses.append([0.0, y_values[i]])
+    colors = [color] * len(x_values)
+    linestyles = [linestyle] * len(x_values)
+    return multiline(x_valueses, y_valueses, ax=ax, title=title, colors=colors,
+                     linestyles=linestyles, linewidth=linewidth)
 
 
 def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
@@ -357,7 +359,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               diff_yaxis_scales=False, x_axis_limits=None, y_axis_limits=None,
               show_markers=False, markers=None,
               axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
-              draw_1to1=False, ax=None):
+              draw_1to1=False, ax=None, linewidth=1.0):
     """
 
     :param x_valueses:
@@ -402,9 +404,12 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         if show_markers:
             marker = markers[i]
         if labels:
-            ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker, linestyle=linestyles[i])
+            lines = ax.plot(x_values, y_values, color=color, label=labels[i], marker=marker, linestyle=linestyles[i],
+                            linewidth=linewidth)
         else:
-            ax.plot(x_values, y_values, color=color, linestyle=linestyles[i], marker=marker)
+            lines = ax.plot(x_values, y_values, color=color, linestyle=linestyles[i], marker=marker,
+                            linewidth=linewidth)
+        plt.setp(lines, linewidth=linewidth)
     if draw_1to1:
         min_xval = min(min(xval) for xval in x_valueses)
         max_xval = max(max(xval) for xval in x_valueses)
