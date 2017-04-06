@@ -34,7 +34,7 @@ def calc_nbins(fragment_min_mz, fragment_max_mz, bin_size):
 
 
 
-def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size):
+def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_SIZE):
     """
     Bin the MS spectra, processing and yielding one at a time.
     :param spectra: a generator or list. type is spectra.MSSpectrum
