@@ -86,6 +86,7 @@ class MSSpectrum(object):
         self.mz_array = mz_array
         self.intensity_array = intensity_array
         self.level = level
+        self.info_name_value_dict = None
 
 
 class MS2Spectrum(MSSpectrum):

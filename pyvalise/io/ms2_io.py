@@ -59,6 +59,25 @@ def retrieve_scans(ms2_file, scan_numbers, precursor_from_zline=True, should_cal
             yield scan
 
 
+def read_header_namevalues(ms2_file):
+    """
+    Read a dict of name-value pairs from the header of a .ms2 file
+    :param ms2_file:
+    :return:
+    """
+    result = {}
+    for line in ms2_file:
+        chunks = line.rstrip().split('\t')
+        if chunks[0] == "H":
+            if chunks[1].startswith("@") and "=" in chunks[1]:
+                name, value = chunks[1][1:].split("=")
+                result[name] = value
+        else:
+            # after the header lines, quit
+            break
+    return result
+
+
 def read_ms2_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=False):
     """
     Silly cover method, because ms2 files only contain ms2 scans. For consistency with mzml_io
@@ -88,6 +107,7 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
     precursor_mz = None
     scan_number = 0
     retention_time = None
+    info_name_value_dict = {}
     charge = None
     fragment_mzs = []
     fragment_intensities = []
@@ -129,15 +149,19 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
                 # sometimes, a Z line will have a 0 charge. Punt on those
                 if charge is not None and charge > 0:
                     logger.debug("0 charge!")
-                    yield spectra.MS2Spectrum(scan_number,
+                    spectrum = spectra.MS2Spectrum(scan_number,
                                               retention_time,
                                               fragment_mzs,
                                               fragment_intensities,
                                               precursor_mz, charge)
+                    spectrum.info_name_value_dict = info_name_value_dict
+                    yield spectrum
                     n_yielded += 1
                     logger.debug("Yielded #%d" % n_yielded)
                 # zero out everything not on this line so that we know if we got it for the next scan
                 charge = None
+                retention_time = None
+                info_name_value_dict = {}
 
             else:
                 if not is_before_first_scan:
@@ -162,6 +186,10 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
             logger.debug("I line: %s" % line)
             if chunks[1] == "RTime" or chunks[1] == "RetTime":
                 retention_time = float(chunks[2])
+            elif chunks[1].startswith("@") and "=" in line:
+                name, value = chunks[1].split("=")
+                name = name[1:]
+                info_name_value_dict[name] = value
 
         elif chunks[0] == "Z":
             logger.debug("Z line")
@@ -201,11 +229,13 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
 
     if scan_number and (retention_time or not require_rt) and fragment_mzs and \
             fragment_intensities and precursor_mz and charge:
-        yield spectra.MS2Spectrum(scan_number,
-                                  retention_time,
-                                  fragment_mzs,
-                                  fragment_intensities,
-                                  precursor_mz, charge)
+        spectrum = spectra.MS2Spectrum(scan_number,
+                                       retention_time,
+                                       fragment_mzs,
+                                       fragment_intensities,
+                                       precursor_mz, charge)
+        spectrum.info_name_value_dict = info_name_value_dict
+        yield spectrum
         n_yielded += 1
     else:
         logger.debug("Tried to write scan with not all values collected.")
@@ -230,19 +260,19 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
         chartfile.close()
 
 
-def write_ms2(scans, outfile):
+def write_ms2(scans, outfile, header_name_value_dict=None):
     """
 
     :param scans:
     :param outfile:
     :return:
     """
-    write_header(outfile)
+    write_header(outfile, header_name_value_dict)
     for scan in scans:
         write_scan(scan, outfile)
 
 
-def write_header(outfile):
+def write_header(outfile, name_value_dict=None):
     """
 
     :param outfile:
@@ -251,6 +281,9 @@ def write_header(outfile):
     outfile.write("H\tCreationDate %s\n" % datetime.date.today())
     outfile.write("H\tExtractor\tDamon Homebrew\n")
     outfile.write("H\tExtractor version\t0.0\n")
+    if name_value_dict:
+        for name in name_value_dict:
+            outfile.write("H\t@%s=%s\n" % (name, name_value_dict[name]))
 
 
 def write_scan(ms2_spectrum, outfile):
@@ -263,6 +296,9 @@ def write_scan(ms2_spectrum, outfile):
     outfile.write("S\t%d\t%d\t%f\n" % (ms2_spectrum.scan_number, ms2_spectrum.scan_number,
                                      ms2_spectrum.precursor_mz))
     outfile.write("I\tRTime\t%f\n" % ms2_spectrum.retention_time)
+    if ms2_spectrum.info_name_value_dict:
+        for name in ms2_spectrum.info_name_value_dict:
+            outfile.write("I\t@%s=%s\n" % (name, ms2_spectrum.info_name_value_dict[name]))
     zline_mplush = peptides.calc_mplush_from_mz_charge(ms2_spectrum.precursor_mz,  ms2_spectrum.charge)
     outfile.write("Z\t%d\t%f\n" % (ms2_spectrum.charge, zline_mplush))
     for i in xrange(0, len(ms2_spectrum.intensity_array)):
