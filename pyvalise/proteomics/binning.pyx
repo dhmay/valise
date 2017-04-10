@@ -21,7 +21,7 @@ DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN = DEFAULT_BIN_SIZE * 2
 logger = logging.getLogger(__name__)
 
 
-def calc_nbins(fragment_min_mz, fragment_max_mz, bin_size):
+def calc_nbins(float fragment_min_mz, float fragment_max_mz, float bin_size):
     """
     Calculate the number of bins needed to cover the specified range.
     This is exposed as a convenience method.
@@ -30,7 +30,8 @@ def calc_nbins(fragment_min_mz, fragment_max_mz, bin_size):
     :param bin_size:
     :return:
     """
-    return int(float(fragment_max_mz - fragment_min_mz) / float(bin_size)) + 1
+    nbins = int(float(fragment_max_mz - fragment_min_mz) / float(bin_size)) + 1
+    return nbins
 
 
 
