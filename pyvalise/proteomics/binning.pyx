@@ -20,6 +20,25 @@ DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN = DEFAULT_BIN_SIZE * 2
 
 logger = logging.getLogger(__name__)
 
+def convolve_array_with_gaussian(input_array,
+                                 float bin_width, float sigma, gaussian=None):
+    """
+    Cribbed from here:
+    http://stackoverflow.com/questions/24148902/python-convolution-with-a-gaussian
+    :param input_array:
+    :param bin_width:
+    :param sigma:
+    :return:
+    """
+#    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] gx
+#    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] gaussian
+#    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] result
+
+    if gaussian is None:
+        gx = np.arange(-3*sigma, 3*sigma, bin_width)
+        gaussian = np.exp(-(gx / sigma) ** 2 / 2)
+    result = np.convolve(input_array, gaussian)
+    return result
 
 def calc_nbins(float fragment_min_mz, float fragment_max_mz, float bin_size):
     """
@@ -32,8 +51,6 @@ def calc_nbins(float fragment_min_mz, float fragment_max_mz, float bin_size):
     """
     nbins = int(float(fragment_max_mz - fragment_min_mz) / float(bin_size)) + 1
     return nbins
-
-
 
 def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_SIZE):
     """
