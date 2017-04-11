@@ -9,6 +9,7 @@ cimport cython
 from cpython cimport array
 import numpy as np
 cimport numpy as np
+from scipy.ndimage.filters import gaussian_filter
 
 NDARRAY_DTYPE = np.float32
 ctypedef np.float32_t NDARRAY_DTYPE_t
@@ -18,27 +19,30 @@ DEFAULT_BIN_SIZE = 1.000495
 # default window around each precursor m/z to exclude signal from, when calculating TIC
 DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN = DEFAULT_BIN_SIZE * 2
 
+#default maximum multiple of sigma that binsize can be and still bother convolving
+DEFAULT_CONVOLUTION_MAX_BINSIZE_MULTIPLE_SIGMA = 6.0
+
 logger = logging.getLogger(__name__)
 
-def convolve_array_with_gaussian(input_array,
-                                 float bin_width, float sigma, gaussian=None):
+def convolve_array_with_gaussian(np.ndarray[NDARRAY_DTYPE_t, ndim=1] in_array,
+                                 float bin_width,
+                                 float gaussian_sigma,
+                                 float max_binsize_multiple_sigma_for_convolve=DEFAULT_CONVOLUTION_MAX_BINSIZE_MULTIPLE_SIGMA):
     """
-    Cribbed from here:
-    http://stackoverflow.com/questions/24148902/python-convolution-with-a-gaussian
-    :param input_array:
+    Convolve in_array with a Gaussian with sigma gaussian_sigma.
+    WARNING: if the bin size is over the maximum multiple of sigma, doesn't convolve, and returns the input
+    array
+    :param in_array:
     :param bin_width:
-    :param sigma:
+    :param gaussian_sigma:
+    :param max_binsize_multiple_sigma_for_convolve:
     :return:
     """
-#    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] gx
-#    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] gaussian
-#    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] result
+    if bin_width / gaussian_sigma > max_binsize_multiple_sigma_for_convolve:
+        return in_array
+    sigma_in_binwidth_units = gaussian_sigma / bin_width
+    return gaussian_filter(in_array, sigma_in_binwidth_units)
 
-    if gaussian is None:
-        gx = np.arange(-3*sigma, 3*sigma, bin_width)
-        gaussian = np.exp(-(gx / sigma) ** 2 / 2)
-    result = np.convolve(input_array, gaussian)
-    return result
 
 def calc_nbins(float fragment_min_mz, float fragment_max_mz, float bin_size):
     """
