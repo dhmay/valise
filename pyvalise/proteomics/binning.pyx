@@ -9,7 +9,7 @@ cimport cython
 from cpython cimport array
 import numpy as np
 cimport numpy as np
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.filters import gaussian_filter1d
 
 NDARRAY_DTYPE = np.float32
 ctypedef np.float32_t NDARRAY_DTYPE_t
@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 def convolve_array_with_gaussian(np.ndarray[NDARRAY_DTYPE_t, ndim=1] in_array,
                                  float bin_width,
                                  float gaussian_sigma,
-                                 float max_binsize_multiple_sigma_for_convolve=DEFAULT_CONVOLUTION_MAX_BINSIZE_MULTIPLE_SIGMA):
+                                 float max_binsize_multiple_sigma_for_convolve=DEFAULT_CONVOLUTION_MAX_BINSIZE_MULTIPLE_SIGMA,
+                                 out_array=None):
     """
     Convolve in_array with a Gaussian with sigma gaussian_sigma.
     WARNING: if the bin size is over the maximum multiple of sigma, doesn't convolve, and returns the input
@@ -41,7 +42,7 @@ def convolve_array_with_gaussian(np.ndarray[NDARRAY_DTYPE_t, ndim=1] in_array,
     if bin_width / gaussian_sigma > max_binsize_multiple_sigma_for_convolve:
         return in_array
     sigma_in_binwidth_units = gaussian_sigma / bin_width
-    return gaussian_filter(in_array, sigma_in_binwidth_units)
+    return gaussian_filter1d(in_array, sigma_in_binwidth_units, output=out_array)
 
 
 def calc_nbins(float fragment_min_mz, float fragment_max_mz, float bin_size):
