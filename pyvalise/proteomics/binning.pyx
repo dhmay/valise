@@ -131,7 +131,7 @@ def bin_spectrum(mz_array, intensity_array,
     cdef float mz
     cdef float intensity
     cdef int nbins = calc_nbins(fragment_min_mz, fragment_max_mz, bin_size)
-    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=2] scan_matrix = np.zeros((1, nbins), dtype=NDARRAY_DTYPE)
+    cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] scan_matrix = np.zeros((nbins,), dtype=NDARRAY_DTYPE)
     cdef float frag_intensity_sum = 0.0
 
 
@@ -148,7 +148,7 @@ def bin_spectrum(mz_array, intensity_array,
         if (not should_normalize_exclude_precursor) or \
                 (abs(precursor_mz - mz) > window_exclude_precursor_signal):
             frag_intensity_sum += intensity
-        scan_matrix[0, bin_idx] = max(scan_matrix[0, bin_idx], intensity)
+        scan_matrix[bin_idx,] = max(scan_matrix[bin_idx,], intensity)
     if should_normalize:
         if frag_intensity_sum > 0:
             # divide intensities by sum
