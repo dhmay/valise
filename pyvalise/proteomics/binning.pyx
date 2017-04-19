@@ -42,6 +42,10 @@ def convolve_array_with_gaussian(np.ndarray[NDARRAY_DTYPE_t, ndim=1] in_array,
     if bin_width / gaussian_sigma > max_binsize_multiple_sigma_for_convolve:
         return in_array
     sigma_in_binwidth_units = gaussian_sigma / bin_width
+#    np.set_printoptions(threshold=np.nan)
+#    print("bin_width=%f, sigma=%f, sigma_in_binwidth=%f" %
+#          (bin_width, gaussian_sigma, sigma_in_binwidth_units))
+#    quit()
     return gaussian_filter1d(in_array, sigma_in_binwidth_units, output=out_array)
 
 
