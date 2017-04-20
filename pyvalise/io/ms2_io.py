@@ -195,7 +195,11 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
             logger.debug("Z line")
             if len(chunks) != 3:
                 raise ValueError("Misformatted Z line:\n%s\n" % line)
-            charge = int(chunks[1])
+            thisline_charge = int(chunks[1])
+            if charge is not None and thisline_charge == 0:
+                # we already have a charge, and this charge is 0. Ignore this line
+                continue
+            charge = thisline_charge
             z_precursor_mplush = float(chunks[2])
             
             if charge != 0:
@@ -295,7 +299,8 @@ def write_scan(ms2_spectrum, outfile):
     """
     outfile.write("S\t%d\t%d\t%f\n" % (ms2_spectrum.scan_number, ms2_spectrum.scan_number,
                                      ms2_spectrum.precursor_mz))
-    outfile.write("I\tRTime\t%f\n" % ms2_spectrum.retention_time)
+    if ms2_spectrum.retention_time:
+        outfile.write("I\tRTime\t%f\n" % ms2_spectrum.retention_time)
     if ms2_spectrum.info_name_value_dict:
         for name in ms2_spectrum.info_name_value_dict:
             outfile.write("I\t@%s=%s\n" % (name, ms2_spectrum.info_name_value_dict[name]))
