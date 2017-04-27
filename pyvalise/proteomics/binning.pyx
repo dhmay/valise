@@ -77,11 +77,17 @@ def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_
 
 def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz, bin_size):
     """
-    :param mzs_1:
-    :param mzs_2:
+    Notionally bin the mzs from two lists of mzs using the specified bin size 
+    (don't actually build the binned array), with specified
+    lower and upper limits. Return the indexes into the notional binned array for all
+    fragments from the first list that match an index into the second binned list.
+    Note: this method is not symmetrical. If you switch mzs_1 and mzs_2, you will get different answers
+    :param mzs_1: 
+    :param mzs_2: 
     :param fragment_min_mz:
     :param fragment_max_mz:
-    :return: the indexes into mzs_1 that match peaks in mzs_2
+    :param bin_size:
+    :return: the indexes into mzs_1 that match peaks in mzs_2 by bin index
     """
     mzs_2_bin_set = set()
     for mz in mzs_2:
