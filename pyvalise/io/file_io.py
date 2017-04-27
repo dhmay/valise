@@ -6,9 +6,11 @@ file reading/writing
 
 import logging
 import csv
+import gzip
 
 
 log = logging.getLogger(__name__)
+
 
 def read_strings_from_file(infile):
     """read a file that consists of floats, one per line, into a list."""
@@ -26,6 +28,19 @@ def write_stringlist_to_file(stringlist, outfile):
     for stri in stringlist:
         outfile.write(stri + "\n")
     outfile.close()
+
+
+def open_maybe_gzipped(filepath, mode='r'):
+    """
+    If filepath ends in .gz, open with gzip. Otherwise, open regularly
+    :param filepath: 
+    :param mode: 
+    :return: 
+    """
+    if filepath.endswith('.gz'):
+        return gzip.open(filepath, mode)
+    else:
+        return open(filepath, mode)
 
 
 def read_namevalue_dict_file(infile, sep='='):

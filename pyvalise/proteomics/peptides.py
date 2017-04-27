@@ -148,23 +148,55 @@ def is_cleavagepep_good_for_ms(pepseq,
 
 def calc_theoretical_peak_mzs(peptide_sequence, charges, aa_modifications,
                               min_mz, max_mz):
+    """
+    Calculate the theoretical m/z values of all b- and y-ions for the given peptide sequence,
+    in the fragment charge states specified, with the modifications specified, that occur between
+    min_mz and max_mz
+    Todo: make ion types a parameter
+    Todo: support variable modifications. But that would mean multiple results
+    Todo: make the main loop more efficient, if anyone cares.
+    :param peptide_sequence: 
+    :param charges: 
+    :param aa_modifications: 
+    :param min_mz: 
+    :param max_mz: 
+    :return: a list of fragment m/zs
+    """
     peak_mzs = []
-    aa_mod_masses = copy.deepcopy(AA_UNMOD_MASSES)
+    # dict of aa masses that are modified. If not in here, use AA_UNMOD_MASSES.
+    # only supporting static mods for now
+    aa_mod_masses = {}
     for aa_mod in aa_modifications:
-        # only supporting static mods for now
-        if not aa_mod.is_variable:
-            aa_mod_masses[aa_mod.aa] += aa_mod.massdiff
+        if aa_mod.is_variable:
+            continue
+        if aa_mod.aa not in aa_mod_masses:
+            aa_mod_masses[aa_mod.aa] = AA_UNMOD_MASSES[aa_mod.aa]
+        aa_mod_masses[aa_mod.aa] += aa_mod.massdiff
+    # loop on charges. This would be far more efficient if I looped on amino acids, instead, and
+    # calculated the mass. I haven't done that because the first line of the for loop, which affects
+    # all ions, uses charge. It wouldn't be that hard, but so far I don't need the performance boost. *shrug*
     for charge in charges:
         b_ion_mass = HYDROGEN_MASS * charge
         for aa in peptide_sequence[0:-1]:
-            b_ion_mass += AA_UNMOD_MASSES[aa]
+            if aa in aa_mod_masses:
+                b_ion_mass += aa_mod_masses[aa]
+            else:
+                b_ion_mass += AA_UNMOD_MASSES[aa]
             b_ion_mz = b_ion_mass / charge
             if min_mz <= b_ion_mz <= max_mz:
                 peak_mzs.append(b_ion_mz)
-
-        y_ion_mass = b_ion_mass + AA_UNMOD_MASSES[peptide_sequence[-1]] + 2 * HYDROGEN_MASS + AminoacidModification.MOD_OXIDATION_MASSDIFF
+        # calculate the mass of the last amino acid
+        last_aa_mass = AA_UNMOD_MASSES[peptide_sequence[-1]]
+        if peptide_sequence[-1] in aa_mod_masses:
+            last_aa_mass = aa_mod_masses[peptide_sequence[-1]]
+        # start y_ion_mass out with the full mass of the peptide
+        y_ion_mass = b_ion_mass + last_aa_mass + 2 * HYDROGEN_MASS + AminoacidModification.MOD_OXIDATION_MASSDIFF
+        # walk backward to calculate all the y-ion masses and mzs
         for aa in peptide_sequence[0:-1]:
-            y_ion_mass -= AA_UNMOD_MASSES[aa]
+            if aa in aa_mod_masses:
+                y_ion_mass -= aa_mod_masses[aa]
+            else:
+                y_ion_mass -= AA_UNMOD_MASSES[aa]
             y_ion_mz = y_ion_mass / charge
             if min_mz <= y_ion_mz <= max_mz:
                 peak_mzs.append(y_ion_mz)
