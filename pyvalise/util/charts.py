@@ -823,7 +823,8 @@ def set_chart_axis_tick_fontsize(ax, fontsize):
         item.set_fontsize(fontsize)
 
 
-def big_hist_line(big_hist_data, xlabel='', ylabel=None, title='', plot_proportion=False):
+def big_hist_line(big_hist_data, xlabel='', ylabel=None, title='', plot_proportion=False,
+                  truncate_at_last_nonzero=False):
     """
 
     :param big_hist_data:
@@ -834,10 +835,12 @@ def big_hist_line(big_hist_data, xlabel='', ylabel=None, title='', plot_proporti
     :return:
     """
     return big_hist_multiline([big_hist_data], xlabel=xlabel, ylabel=ylabel, title=title,
-                              plot_proportion=plot_proportion)
+                              plot_proportion=plot_proportion,
+                              truncate_at_last_nonzero=truncate_at_last_nonzero)
 
 
-def big_hist_multiline(big_hist_datas, xlabel='', ylabel=None, title='', labels=None, plot_proportion=False):
+def big_hist_multiline(big_hist_datas, xlabel='', ylabel=None, title='', labels=None,
+                       plot_proportion=False, truncate_at_last_nonzero=False):
     """
     Plot a multi-line plot from BigHistData data objects.
     Requires min_shown_value and max_shown_value are same for all the inputs
@@ -865,6 +868,17 @@ def big_hist_multiline(big_hist_datas, xlabel='', ylabel=None, title='', labels=
         if plot_proportion:
             yvalues = big_hist_data.generate_proportion_yvals()
         yvalueses.append(yvalues)
+    if truncate_at_last_nonzero:
+        last_bin = 0
+        for yvalues in yvalueses:
+            for i in xrange(last_bin, len(yvalues)):
+                if yvalues[i] > 0:
+                    last_bin = i
+        logger.debug("big_hist_multiline truncated %d to %d." % (len(xvalueses[0]), last_bin))
+        for i in xrange(0, len(xvalueses)):
+            xvalueses[i] = xvalueses[i][0:last_bin+1]
+            yvalueses[i] = yvalueses[i][0:last_bin+1]
+
     return multiline(xvalueses, yvalueses, title=title, xlabel=xlabel, ylabel=ylabel, labels=labels)
 
 
