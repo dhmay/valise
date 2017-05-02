@@ -45,7 +45,7 @@ def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
                                                                   aa_mods, 0, 5000)
 #        print("theo")
 #        print(theoretical_peak_mzs)
-        match_idxs = binning.bin_compare_two_spectra(ms2_spectrum1.mz_array, theoretical_peak_mzs,
+        match_idxs, _, _ = binning.bin_compare_two_spectra(ms2_spectrum1.mz_array, theoretical_peak_mzs,
                                                      0, 5000, binning.DEFAULT_BIN_SIZE)
 #        print("match")
 #        print(match_idxs)
@@ -56,7 +56,7 @@ def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
     if peptide_sequence2:
         theoretical_peak_mzs = peptides.calc_theoretical_peak_mzs(peptide_sequence2, [1, 2],
                                                                   aa_mods, 0, 5000)
-        match_idxs = binning.bin_compare_two_spectra(ms2_spectrum2.mz_array, theoretical_peak_mzs,
+        match_idxs, _, _ = binning.bin_compare_two_spectra(ms2_spectrum2.mz_array, theoretical_peak_mzs,
                                                      0, 5000, binning.DEFAULT_BIN_SIZE)
         add_spectrumpeaks_to_ax(ax, [ms2_spectrum2.mz_array[i] for i in match_idxs],
                                 [normalized_intensities_2[i] for i in match_idxs], color='red',

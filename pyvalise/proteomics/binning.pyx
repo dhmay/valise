@@ -81,13 +81,14 @@ def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz, bin_
     (don't actually build the binned array), with specified
     lower and upper limits. Return the indexes into the notional binned array for all
     fragments from the first list that match an index into the second binned list.
-    Note: this method is not symmetrical. If you switch mzs_1 and mzs_2, you will get different answers
+    Also return the counts of populated bins in mzs_1 and mzs_2
     :param mzs_1: 
     :param mzs_2: 
     :param fragment_min_mz:
     :param fragment_max_mz:
     :param bin_size:
-    :return: the indexes into mzs_1 that match peaks in mzs_2 by bin index
+    :return: a tuple containing the indexes into mzs_1 that match peaks in mzs_2 by bin index, 
+    the number of bins with peaks in mzs_1, and the number of bins with peaks in mzs_2
     """
     mzs_2_bin_set = set()
     for mz in mzs_2:
@@ -95,17 +96,17 @@ def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz, bin_
             continue
         bin_idx = int((mz - fragment_min_mz) / bin_size)
         mzs_2_bin_set.add(bin_idx)
-    result = []
+    shared_bins = []
+    mzs_1_bin_set = set()
     for i in xrange(0, len(mzs_1)):
         mz = mzs_1[i]
         if mz < fragment_min_mz or mz > fragment_max_mz:
             continue
         bin_idx = int((mz - fragment_min_mz) / bin_size)
+        mzs_1_bin_set.add(bin_idx)
         if bin_idx in mzs_2_bin_set:
-            result.append(i)
-    return result
-
-
+            shared_bins.append(i)
+    return shared_bins, len(mzs_1_bin_set), len(mzs_2_bin_set)
 
 
 def bin_spectrum(mz_array, intensity_array,
