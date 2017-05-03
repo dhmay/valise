@@ -75,38 +75,26 @@ def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_
                            fragment_min_mz, fragment_max_mz, bin_size)
 
 
-def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz, bin_size):
+def make_binidx_matchcount_map(mzs, fragment_min_mz, fragment_max_mz, bin_size):
     """
-    Notionally bin the mzs from two lists of mzs using the specified bin size 
+    Notionally bin the mzs from a list of mzs using the specified bin size 
     (don't actually build the binned array), with specified
-    lower and upper limits. Return the indexes into the notional binned array for all
-    fragments from the first list that match an index into the second binned list.
-    Also return the counts of populated bins in mzs_1 and mzs_2
-    :param mzs_1: 
-    :param mzs_2: 
+    lower and upper limits. Return a map from bin indexes to a count of fragments
+    :param mzs: 
     :param fragment_min_mz:
     :param fragment_max_mz:
     :param bin_size:
-    :return: a tuple containing the indexes into mzs_1 that match peaks in mzs_2 by bin index, 
-    the number of bins with peaks in mzs_1, and the number of bins with peaks in mzs_2
+    :return:  a map from bin index to a count of fragments in that bin
     """
-    mzs_2_bin_set = set()
-    for mz in mzs_2:
+    binidx_matchcount_map = {}
+    for mz in mzs:
         if mz < fragment_min_mz or mz > fragment_max_mz:
             continue
         bin_idx = int((mz - fragment_min_mz) / bin_size)
-        mzs_2_bin_set.add(bin_idx)
-    shared_bins = []
-    mzs_1_bin_set = set()
-    for i in xrange(0, len(mzs_1)):
-        mz = mzs_1[i]
-        if mz < fragment_min_mz or mz > fragment_max_mz:
-            continue
-        bin_idx = int((mz - fragment_min_mz) / bin_size)
-        mzs_1_bin_set.add(bin_idx)
-        if bin_idx in mzs_2_bin_set:
-            shared_bins.append(i)
-    return shared_bins, len(mzs_1_bin_set), len(mzs_2_bin_set)
+        if bin_idx not in binidx_matchcount_map:
+            binidx_matchcount_map[bin_idx] = 0
+        binidx_matchcount_map[bin_idx] += 1
+    return binidx_matchcount_map
 
 
 def bin_spectrum(mz_array, intensity_array,
