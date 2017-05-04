@@ -314,7 +314,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
     if y_axis_limits is not None:
         plt.ylim(y_axis_limits)
     if x_axis_limits is not None:
-        plt.xlim(y_axis_limits)
+        plt.xlim(x_axis_limits)
     if lowess:
         lowess = sm.nonparametric.lowess(y_values, x_values, frac=0.1)
         ax.plot(lowess[:, 0], lowess[:, 1])
