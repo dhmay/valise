@@ -29,6 +29,43 @@ def sqrt_normalize_intensities(intensity_values):
     return result
 
 
+def make_binidx_matchcount_map(mzs, fragment_min_mz, fragment_max_mz, bin_size):
+    """
+    Utility function for calc_proportion_fragments_incommon.
+    Notionally bin the mzs from a list of mzs using the specified bin size 
+    (don't actually build the binned array), with specified
+    lower and upper limits. Return a map from bin indexes to a count of fragments
+    :param mzs: 
+    :param fragment_min_mz:
+    :param fragment_max_mz:
+    :param bin_size:
+    :return:  a map from bin index to a count of fragments in that bin
+    """
+    binidx_matchcount_map = {}
+    for mz in mzs:
+        if mz < fragment_min_mz or mz > fragment_max_mz:
+            continue
+        bin_idx = int((mz - fragment_min_mz) / bin_size)
+        if bin_idx not in binidx_matchcount_map:
+            binidx_matchcount_map[bin_idx] = 0
+        binidx_matchcount_map[bin_idx] += 1
+    return binidx_matchcount_map
+
+
+def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz,
+                            bin_size=binning.DEFAULT_BIN_SIZE):
+    bin_peakcounts_2 = make_binidx_matchcount_map(mzs_2,fragment_min_mz, fragment_max_mz, bin_size=bin_size)
+    result_idxs = []
+    for i in xrange(0, len(mzs_1)):
+        bin_idx = int((mzs_1 - fragment_min_mz) / bin_size)
+        if bin_idx in bin_peakcounts_2:
+            result_idxs.append(bin_idx)
+    return result_idxs
+
+
+
+
+
 def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
                      peptide_sequence1=None, peptide_sequence2=None,
                      title=None):
@@ -45,7 +82,7 @@ def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
                                                                   aa_mods, 0, 5000)
 #        print("theo")
 #        print(theoretical_peak_mzs)
-        match_idxs, _, _ = binning.bin_compare_two_spectra(ms2_spectrum1.mz_array, theoretical_peak_mzs,
+        match_idxs = bin_compare_two_spectra(ms2_spectrum1.mz_array, theoretical_peak_mzs,
                                                      0, 5000, binning.DEFAULT_BIN_SIZE)
 #        print("match")
 #        print(match_idxs)
@@ -56,7 +93,7 @@ def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
     if peptide_sequence2:
         theoretical_peak_mzs = peptides.calc_theoretical_peak_mzs(peptide_sequence2, [1, 2],
                                                                   aa_mods, 0, 5000)
-        match_idxs, _, _ = binning.bin_compare_two_spectra(ms2_spectrum2.mz_array, theoretical_peak_mzs,
+        match_idxs = bin_compare_two_spectra(ms2_spectrum2.mz_array, theoretical_peak_mzs,
                                                      0, 5000, binning.DEFAULT_BIN_SIZE)
         add_spectrumpeaks_to_ax(ax, [ms2_spectrum2.mz_array[i] for i in match_idxs],
                                 [normalized_intensities_2[i] for i in match_idxs], color='red',

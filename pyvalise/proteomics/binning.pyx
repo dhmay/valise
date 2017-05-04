@@ -61,6 +61,11 @@ def calc_nbins(float fragment_min_mz, float fragment_max_mz, float bin_size):
     nbins = int(float(fragment_max_mz - fragment_min_mz) / float(bin_size)) + 1
     return nbins
 
+
+
+
+
+
 def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_SIZE):
     """
     Bin the MS spectra, processing and yielding one at a time.
