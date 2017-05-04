@@ -75,26 +75,7 @@ def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_
                            fragment_min_mz, fragment_max_mz, bin_size)
 
 
-def make_binidx_matchcount_map(mzs, fragment_min_mz, fragment_max_mz, bin_size):
-    """
-    Notionally bin the mzs from a list of mzs using the specified bin size 
-    (don't actually build the binned array), with specified
-    lower and upper limits. Return a map from bin indexes to a count of fragments
-    :param mzs: 
-    :param fragment_min_mz:
-    :param fragment_max_mz:
-    :param bin_size:
-    :return:  a map from bin index to a count of fragments in that bin
-    """
-    binidx_matchcount_map = {}
-    for mz in mzs:
-        if mz < fragment_min_mz or mz > fragment_max_mz:
-            continue
-        bin_idx = int((mz - fragment_min_mz) / bin_size)
-        if bin_idx not in binidx_matchcount_map:
-            binidx_matchcount_map[bin_idx] = 0
-        binidx_matchcount_map[bin_idx] += 1
-    return binidx_matchcount_map
+
 
 
 def bin_spectrum(mz_array, intensity_array,
