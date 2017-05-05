@@ -54,16 +54,22 @@ def make_binidx_matchcount_map(mzs, fragment_min_mz, fragment_max_mz, bin_size):
 
 def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz,
                             bin_size=binning.DEFAULT_BIN_SIZE):
+    """
+    
+    :param mzs_1: 
+    :param mzs_2: 
+    :param fragment_min_mz: 
+    :param fragment_max_mz: 
+    :param bin_size: 
+    :return: 
+    """
     bin_peakcounts_2 = make_binidx_matchcount_map(mzs_2,fragment_min_mz, fragment_max_mz, bin_size=bin_size)
     result_idxs = []
     for i in xrange(0, len(mzs_1)):
-        bin_idx = int((mzs_1 - fragment_min_mz) / bin_size)
+        bin_idx = int((mzs_1[i] - fragment_min_mz) / bin_size)
         if bin_idx in bin_peakcounts_2:
             result_idxs.append(bin_idx)
     return result_idxs
-
-
-
 
 
 def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
