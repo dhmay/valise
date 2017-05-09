@@ -181,14 +181,14 @@ def calc_theoretical_peak_mzs(peptide_sequence, charges, modified_aas, min_mz, m
     nterm_deltamass = 0.0
     cterm_deltamass = 0.0
     for aa_mod in modified_aas:
-        if aa_mod.position in position_massdiff_map:
-            raise ValueError('calc_theoretical_peak_mzs got multiple ModifiedAminoAcids on the same position')
-        if aa_mod.position == ModifiedAminoacid.POSITION_NTERM:
+        if aa_mod.position_0based in position_massdiff_map:
+            raise ValueError('calc_theoretical_peak_mzs got multiple ModifiedAminoAcids on the same position_0based')
+        if aa_mod.position_0based == ModifiedAminoacid.POSITION_NTERM:
             nterm_deltamass += aa_mod.massdiff
-        elif aa_mod.position == ModifiedAminoacid.POSITION_CTERM:
+        elif aa_mod.position_0based == ModifiedAminoacid.POSITION_CTERM:
             cterm_deltamass += aa_mod.massdiff
         else:
-            position_massdiff_map[aa_mod.position] = aa_mod.massdiff
+            position_massdiff_map[aa_mod.position_0based] = aa_mod.mass_diff
     # loop on charges. This would be far more efficient if I looped on amino acids, instead, and
     # calculated the mass. I haven't done that because the first line of the for loop, which affects
     # all ions, uses charge. It wouldn't be that hard, but so far I don't need the performance boost. *shrug*
@@ -496,6 +496,7 @@ class AminoacidModification:
                                  self.modified_mass, self.massdiff)
 
 
+
 class ModifiedAminoacid:
     """ 
     stores information about a specific instance of an amino acid
@@ -552,7 +553,7 @@ def apply_modifications_to_sequence(sequence, aa_modifications):
     # step through the sequence and create the ModifiedAminoacids for each position
     for i in xrange(0, len(sequence)):
         if sequence[i] in aa_aamod_map:
-            modified_aas.append(aa_aamod_map[sequence[i].create_modified_aa(i)])
+            modified_aas.append(aa_aamod_map[sequence[i]].create_modified_aa(i))
     return modified_aas
 
 
