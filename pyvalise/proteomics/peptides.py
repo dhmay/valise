@@ -87,9 +87,31 @@ AA_UNMOD_MASSES = {
     'Y': 163.06333
 }
 
-# Table 4 Measured Molar Extinction Coefficients (214 nm) of protein and peptides from J. Agric Food Chem. Vol. 55. No. 14, 2007
-EXTINCTION_COEFFICIENT = {'P': 2675,'H': 5125,'F': 5200,'Y': 5375,'W': 29050,'M': 980,'R': 102,'N': 136,'Q': 142,
-	    'C': 225,'G': 21,'A': 32,'S': 34,'K': 41,'T': 41,'V': 43,'I': 45,'L': 45,'D': 58,'E': 78}
+# Table 4 Measured Molar Extinction Coefficients (214 nm) of protein and peptides from
+# J. Agric Food Chem. Vol. 55. No. 14, 2007
+EXTINCTION_COEFFICIENT = {'P': 2675, 'H': 5125, 'F': 5200, 'Y': 5375, 'W': 29050, 'M': 980, 'R': 102, 'N': 136,
+                          'Q': 142, 'C': 225, 'G': 21, 'A': 32, 'S': 34, 'K': 41, 'T': 41, 'V': 43, 'I': 45,
+                          'L': 45, 'D': 58, 'E': 78}
+
+
+def make_masstable_with_mods(aa_modifications):
+    """
+    Make an amino acid mass table with the indicated modifications
+    :param aa_modifications: 
+    :return: 
+    """
+    result = AA_UNMOD_MASSES.copy()
+    for aa_mod in aa_modifications:
+        result[aa_mod.aa] += aa_mod.massdiff
+    return result
+
+
+def make_masstable_with_iodo_c():
+    """
+    Make an amino acid mass table with iodoacetamide on C
+    :return: 
+    """
+    return make_masstable_with_mods([MODIFICATION_IODOACETAMIDE_STATIC])
 
 
 def calc_peptide_rt(peptide_sequence):
