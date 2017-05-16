@@ -83,9 +83,11 @@ def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
     add_spectrumpeaks_to_ax(ax, ms2_spectrum1.mz_array, normalized_intensities_1)
     aa_mods = [peptides.MODIFICATION_IODOACETAMIDE_STATIC]
     if peptide_sequence1:
-        modified_aas = peptides.apply_modifications_to_sequence(peptide_sequence1, aa_mods)
+        massdeltas_1, ntermdiff, ctermdiff = peptides.apply_modifications_to_sequence(peptide_sequence1, aa_mods)
         theoretical_peak_mzs = peptides.calc_theoretical_peak_mzs(peptide_sequence1, [1, 2],
-                                                                  modified_aas, 0, 5000)
+                                                                  massdeltas_1, 0, 5000,
+                                                                  nterm_deltamass=ntermdiff,
+                                                                  cterm_deltamass=ctermdiff)
 #        print("theo")
 #        print(theoretical_peak_mzs)
         match_idxs = bin_compare_two_spectra(ms2_spectrum1.mz_array, theoretical_peak_mzs,
@@ -97,10 +99,12 @@ def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
                                 should_invert=False)
     add_spectrumpeaks_to_ax(ax, ms2_spectrum2.mz_array, normalized_intensities_2, should_invert=True)
     if peptide_sequence2:
-        modified_aas = peptides.apply_modifications_to_sequence(peptide_sequence1, aa_mods)
+        massdeltas_2, ntermdiff, ctermdiff = peptides.apply_modifications_to_sequence(peptide_sequence1, aa_mods)
 
         theoretical_peak_mzs = peptides.calc_theoretical_peak_mzs(peptide_sequence2, [1, 2],
-                                                                  modified_aas, 0, 5000)
+                                                                  massdeltas_2, 0, 5000,
+                                                                  nterm_deltamass=ntermdiff,
+                                                                  cterm_deltamass=ctermdiff)
         match_idxs = bin_compare_two_spectra(ms2_spectrum2.mz_array, theoretical_peak_mzs,
                                                      0, 5000, binning.DEFAULT_BIN_SIZE)
         add_spectrumpeaks_to_ax(ax, [ms2_spectrum2.mz_array[i] for i in match_idxs],

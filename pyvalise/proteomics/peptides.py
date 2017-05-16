@@ -174,7 +174,8 @@ def is_cleavagepep_good_for_ms(pepseq,
     return True
 
 
-def calc_theoretical_peak_mzs(peptide_sequence, charges, modified_aas, min_mz, max_mz,
+def calc_theoretical_peak_mzs(peptide_sequence, charges, position_massdiffs, min_mz, max_mz,
+                              nterm_deltamass=0.0, cterm_deltamass=0.0,
                               ion_types=('b', 'y')):
     """
     Calculate the theoretical m/z values of all b- and y-ions for the given peptide sequence,
@@ -185,50 +186,42 @@ def calc_theoretical_peak_mzs(peptide_sequence, charges, modified_aas, min_mz, m
     Todo: make the main loop more efficient, if anyone cares.
     :param peptide_sequence: 
     :param charges: 
-    :param modified_aas: a list of ModifiedAminoAcids to use when calculating masses
+    :param position_massdiffs: a list of delta masses for each sequence position. Must be the same
+    length as peptide_sequence.
     :param min_mz: 
     :param max_mz: 
+    :param nterm_deltamass: delta mass for the N terminus
+    :param cterm_deltamass: delta mass for the C terminus
     :param ion_types: a list of ion types to include. Currently only supports 'b' and 'y'
     :return: a list of fragment m/zs
     """
+    if not ion_types:
+        raise ValueError("No ion types supplied")
+    if len(peptide_sequence) != len(position_massdiffs):
+        raise ValueError("peptide_sequence has length %d; position_massdiffs has length %d. Must be same." %
+                         (len(peptide_sequence), len(position_massdiffs)))
     for ion_type in ion_types:
         if ion_type not in ('b', 'y'):
             raise ValueError('calc_theoretical_peak_mzs got unknown ion type "%s". Only "b" and "y" supported.' %
                              ion_type)
     peak_mzs = []
-    # dict from position to delta masses for that position. If not in here, use AA_UNMOD_MASSES.
-    # only supporting static mods for now
-    position_massdiff_map = {}
-    # c-terminal and n-terminal modification mass differences
-    nterm_deltamass = 0.0
-    cterm_deltamass = 0.0
-    for aa_mod in modified_aas:
-        if aa_mod.position_0based in position_massdiff_map:
-            raise ValueError('calc_theoretical_peak_mzs got multiple ModifiedAminoAcids on the same position_0based')
-        if aa_mod.position_0based == ModifiedAminoacid.POSITION_NTERM:
-            nterm_deltamass += aa_mod.massdiff
-        elif aa_mod.position_0based == ModifiedAminoacid.POSITION_CTERM:
-            cterm_deltamass += aa_mod.massdiff
-        else:
-            position_massdiff_map[aa_mod.position_0based] = aa_mod.mass_diff
+
     # loop on charges. This would be far more efficient if I looped on amino acids, instead, and
     # calculated the mass. I haven't done that because the first line of the for loop, which affects
     # all ions, uses charge. It wouldn't be that hard, but so far I don't need the performance boost. *shrug*
     for charge in charges:
-        nterm_mass = HYDROGEN_MASS * charge + cterm_deltamass
+        nterm_mass = HYDROGEN_MASS * charge + nterm_deltamass
         b_ion_mass = nterm_mass
         # walk forward through the sequence, adding mass to b_ion_mass for each amino acid
         for position in xrange(0, len(peptide_sequence) - 1):
             b_ion_mass += AA_UNMOD_MASSES[peptide_sequence[position]]
-            if position in position_massdiff_map:
-                b_ion_mass += position_massdiff_map[position]
+            b_ion_mass += position_massdiffs[position]
             b_ion_mz = b_ion_mass / charge
-            if min_mz <= b_ion_mz <= max_mz:
+            if min_mz <= b_ion_mz <= max_mz and 'b' in ion_types:
                 peak_mzs.append(b_ion_mz)
         # calculate the mass of the last amino acid, which isn't part of b_ion_mass
         last_aa_mass = AA_UNMOD_MASSES[peptide_sequence[-1]]
-        if len(peptide_sequence) - 1 in position_massdiff_map:
-            last_aa_mass += position_massdiff_map[len(peptide_sequence) - 1]
+        last_aa_mass += position_massdiffs[len(peptide_sequence) - 1]
         # start y_ion_mass out with the full mass of the peptide.
         # take the highest b ion mass, add the mass of the C terminus, and subtract the mass of the N terminus
         cterm_mass =  2 * HYDROGEN_MASS + AminoacidModification.MOD_OXIDATION_MASSDIFF + cterm_deltamass
@@ -236,10 +229,9 @@ def calc_theoretical_peak_mzs(peptide_sequence, charges, modified_aas, min_mz, m
         # walk forward to calculate all the y-ion masses and mzs
         for position in xrange(0, len(peptide_sequence) - 1):
             y_ion_mass -= AA_UNMOD_MASSES[peptide_sequence[position]]
-            if position in position_massdiff_map:
-                y_ion_mass -= position_massdiff_map[position]
+            y_ion_mass -= position_massdiffs[position]
             y_ion_mz = y_ion_mass / charge
-            if min_mz <= y_ion_mz <= max_mz:
+            if min_mz <= y_ion_mz <= max_mz and 'y' in ion_types:
                 peak_mzs.append(y_ion_mz)
     return peak_mzs
 
@@ -518,7 +510,6 @@ class AminoacidModification:
                                  self.modified_mass, self.massdiff)
 
 
-
 class ModifiedAminoacid:
     """ 
     stores information about a specific instance of an amino acid
@@ -551,14 +542,19 @@ class ModifiedAminoacid:
 def apply_modifications_to_sequence(sequence, aa_modifications):
     """
     Given a sequence and a list of AminoacidModifications, apply the mods to each position
-    in the sequence 
+    in the sequence, as well as the N and C termini 
     Does not handle variable modifications -- raises an exception.
     Does not handle multiple modifications on the same position -- raises an exception
-    :param sequence: 
-    :param aa_modifications: 
-    :return: a list of ModifiedAminoAcids
+    :param sequence: peptide aa string
+    :param aa_modifications: list of AminoacidModifications
+    :return: a tuple of:
+    (list of mass differences with the same length as the sequence,
+    N-terminal delta mass,
+    C-terminal delta mass)
     """
-    modified_aas = []
+    position_massdiff_list = [0] * len(sequence)
+    nterm_deltamass = 0.0
+    cterm_deltamass = 0.0
     aa_aamod_map = {}
     # build a map from amino acids to ModifiedAminoAcids, and also add n-terminal and c-terminal modifications
     for aa_modification in aa_modifications:
@@ -569,14 +565,14 @@ def apply_modifications_to_sequence(sequence, aa_modifications):
         aa_aamod_map[aa_modification.aa] = aa_modification
         # handle N- or C-terminal modifications here
         if aa_modification.aa == AminoacidModification.NTERM_CHAR:
-            modified_aas.append(aa_modification.create_modified_aa(ModifiedAminoacid(ModifiedAminoacid.POSITION_NTERM)))
+            nterm_deltamass = aa_modification.massdiff
         elif aa_modification.aa == AminoacidModification.CTERM_CHAR:
-            modified_aas.append(aa_modification.create_modified_aa(ModifiedAminoacid(ModifiedAminoacid.POSITION_CTERM)))
+            cterm_deltamass = aa_modification.massdiff
     # step through the sequence and create the ModifiedAminoacids for each position
     for i in xrange(0, len(sequence)):
         if sequence[i] in aa_aamod_map:
-            modified_aas.append(aa_aamod_map[sequence[i]].create_modified_aa(i))
-    return modified_aas
+            position_massdiff_list[i] = aa_aamod_map[sequence[i]].massdiff
+    return position_massdiff_list, nterm_deltamass, cterm_deltamass
 
 
 class ModifiedPeptide:
