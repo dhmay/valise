@@ -306,7 +306,8 @@ def multibar(valueses, labels, title='', colors=None,
 def line_plot(x_values, y_values, title=None, lowess=False,
               xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-              y_axis_limits=None, x_axis_limits=None):
+              y_axis_limits=None, x_axis_limits=None,
+              xtick_positions=None, xtick_labels=None):
     """trivial line plot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -328,6 +329,10 @@ def line_plot(x_values, y_values, title=None, lowess=False,
         plt.yscale('log', basey=log_base)
     if should_logx:
         plt.xscale('log', basex=log_base)
+    if xtick_positions:
+        assert (xtick_labels is not None)
+        ax.set_xticks(xtick_positions)
+        ax.set_xticklabels(xtick_labels)
     return figure
 
 
@@ -357,6 +362,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               linestyles=None, legend_on_chart=False, xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
               diff_yaxis_scales=False, x_axis_limits=None, y_axis_limits=None,
+              xtick_positions=None, xtick_labels=None,
               show_markers=False, markers=None,
               axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
               draw_1to1=False, ax=None, linewidth=1.0):
@@ -416,6 +422,9 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         min_yval = min(min(yval) for yval in y_valueses)
         max_yval = max(max(yval) for yval in y_valueses)
         values_1to1 = [max(min_xval,  min_yval), min(max_xval, max_yval)]
+        # use copies of x and y values sets, because editing
+        x_valueses = x_valueses[:]
+        y_valueses = y_valueses[:]
         x_valueses.append(values_1to1)
         y_valueses.append(values_1to1)
         ax.plot(values_1to1, values_1to1, color='#666666', linestyle='dotted')
@@ -438,6 +447,10 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         ax.set_xlabel(xlabel)
     if ylabel:
         ax.set_ylabel(ylabel)
+    if xtick_positions:
+        assert(xtick_labels is not None)
+        ax.set_xticks(xtick_positions)
+        ax.set_xticklabels(xtick_labels)
     for ax in axes:
         ax.set_aspect(1./ax.get_data_ratio())
     return figure
