@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+"""
+Renumber the scans in an .ms2 file. Sometimes I seem to end up with ms2 files with
+all the scans having scan number 0.
+"""
+
+import argparse
+import logging
+from datetime import datetime
+from pyvalise.io import ms_io
+from pyvalise.proteomics.spectra import plot_ms2_spectrum
+from pyvalise.util import charts
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2015 Damon May"
+__license__ = ""
+__version__ = ""
+
+logger = logging.getLogger(__name__)
+
+
+
+
+def main():
+
+    # declare args
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('infile', type=argparse.FileType('r'),
+                        help='input file')
+    parser.add_argument('--outpdf', type=argparse.FileType('w'), required=True,
+                        help='output PDF file')
+    parser.add_argument("--scans", help="Scan numbers to plot")
+    parser.add_argument('--debug', action="store_true", help='Enable debug logging')
+    args = parser.parse_args()
+
+    # logging
+    logging.basicConfig(level=logging.INFO, 
+                        format="%(asctime)s %(levelname)s: %(message)s")
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+    scan_numbers_to_keep = None
+    if args.scans:
+        scan_numbers_to_keep = [int(x) for x in args.scans.split(',')]
+    spectra_to_plot = ms_io.read_spectra(args.infile, scan_numbers_to_keep=scan_numbers_to_keep, level=2)
+    mycharts = []
+    for spectrum in spectra_to_plot:
+        mycharts.append(plot_ms2_spectrum(spectrum, title=spectrum.scan_number))
+    charts.write_pdf(mycharts, args.outpdf)
+    print("Done.")
+
+
+
+
+start_time = datetime.now()
+logger.debug("Start time: %s" % start_time)
+main()
+logger.debug("End time: %s" % datetime.now())
+logger.debug("Elapsed time: %s" % (datetime.now() - start_time))

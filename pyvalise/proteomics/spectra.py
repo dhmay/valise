@@ -71,6 +71,33 @@ def bin_compare_two_spectra(mzs_1, mzs_2, fragment_min_mz, fragment_max_mz,
     return result_idxs
 
 
+def plot_ms2_spectrum(ms2_spectrum, peptide_sequence=None, title=None):
+    figure = plt.figure()
+    ax = figure.add_subplot(1, 1, 1)
+    if title:
+        ax.set_title(title)
+    normalized_intensities_1 = sqrt_normalize_intensities(ms2_spectrum.intensity_array)
+    add_spectrumpeaks_to_ax(ax, ms2_spectrum.mz_array, normalized_intensities_1)
+
+    aa_mods = [peptides.MODIFICATION_IODOACETAMIDE_STATIC]
+    if peptide_sequence:
+        massdeltas_1, ntermdiff, ctermdiff = peptides.apply_modifications_to_sequence(peptide_sequence, aa_mods)
+        theoretical_peak_mzs = peptides.calc_theoretical_peak_mzs(peptide_sequence, [1, 2],
+                                                                  massdeltas_1, 0, 5000,
+                                                                  nterm_deltamass=ntermdiff,
+                                                                  cterm_deltamass=ctermdiff)
+        match_idxs = bin_compare_two_spectra(ms2_spectrum.mz_array, theoretical_peak_mzs,
+                                                     0, 5000, binning.DEFAULT_BIN_SIZE)
+        add_spectrumpeaks_to_ax(ax, [ms2_spectrum.mz_array[i] for i in match_idxs],
+                                [normalized_intensities_1[i] for i in match_idxs], color='red',
+                                should_invert=False)
+    min_mz = min(ms2_spectrum.mz_array)
+    max_mz = max(ms2_spectrum.mz_array)
+    ax.plot([min_mz, max_mz], [0.0, 0.0], color='black')
+
+    return figure
+
+
 def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
                      peptide_sequence1=None, peptide_sequence2=None,
                      title=None):
