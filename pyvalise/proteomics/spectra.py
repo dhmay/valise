@@ -46,16 +46,19 @@ def make_peptide_theoretical_spectra(peptide_sequence, aa_modifications,
     :param max_fragment_mz: 
     :return: 
     """
-    modpep_spectrum_map = {}
+    modpep_charge_spectrum_map = {}
     modified_peptides_this_seq = peptides.calc_uniquemass_modpeps(peptide_sequence, aa_modifications)
+    n_written = 0
     for modpep in modified_peptides_this_seq:
         # assign scan numbers sequentially. Dummy RTs of 0.0
+        modpep_charge_spectrum_map[modpep] = {}
         for charge in precursor_charges:
-            modpep_spectrum_map[modpep] = make_theoretical_spectrum(modpep, charge, fragment_charges,
+            modpep_charge_spectrum_map[modpep][charge] = make_theoretical_spectrum(modpep, charge, fragment_charges,
                                                                     min_fragment_mz, max_fragment_mz,
-                                                                    len(modpep_spectrum_map) + 1,
+                                                                    n_written + 1,
                                                                     0.0)
-    return modpep_spectrum_map
+            n_written += 1
+    return modpep_charge_spectrum_map
 
 
 def make_theoretical_spectrum(modified_peptide, charge,

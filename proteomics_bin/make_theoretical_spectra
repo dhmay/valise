@@ -57,17 +57,22 @@ def main():
     logger.debug("Start time: %s" % script_start_time)
 
     ms2_io.write_header(args.out)
+    if args.outmodpepfile:
+        args.outmodpepfile.write("sequence\tmod_sequence")
 
     modifications = peptides.AminoacidModification.parse_modlist_string(args.modifications)
 
     source_peptides = [line.strip() for line in args.infile]
     n_written = 0
     for peptide in source_peptides:
-        modpep_spectrum_map = spectra.make_peptide_theoretical_spectra(peptide, modifications)
-        for modpep in modpep_spectrum_map:
-            n_written += 1
-            args.outmodpepfile.write(peptide + "\t" + modpep.to_string() + '\n')
-            ms2_io.write_scan(modpep_spectrum_map[modpep], args.out)
+        modpep_charge_spectrum_map = spectra.make_peptide_theoretical_spectra(peptide, modifications)
+        for modpep in modpep_charge_spectrum_map:
+            for charge in modpep_charge_spectrum_map[modpep]:
+                n_written += 1
+                args.outmodpepfile.write(peptide + "\t" + modpep.to_string() + '\n')
+                spectrum = modpep_charge_spectrum_map[modpep][charge]
+                spectrum.scan_number = n_written
+                ms2_io.write_scan(spectrum, args.out)
     print("Wrote %d spectra to %s" % (n_written, args.out.name))
     args.out.close()
     if args.outmodpepfile:
