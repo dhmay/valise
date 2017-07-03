@@ -61,6 +61,7 @@ DEFAULT_MAX_PEPTIDE_TRYPTOPHANS = 1
 # membrane proteins. Ann. Rev. Biophys. Biophys. Chem. 15, 321-353
 AA_HYDROPHOBICITIES = {'F': 3.7, 'M': 3.4, 'I': 3.1, 'L': 2.8, 'V': 2.6,
                        'C': 2.0, 'W': 1.9, 'A': 1.6, 'T': 1.2, 'G': 1.0,
+                       'C': 2.0, 'W': 1.9, 'A': 1.6, 'T': 1.2, 'G': 1.0,
                        'S': 0.6, 'P': -0.2, 'Y': -0.7, 'H': -3.0, 'Q': -4.1,
                        'N': -4.8, 'E': -8.2, 'K': -8.8, 'D': -9.2, 'R': -12.3}
 
@@ -592,7 +593,7 @@ class ModifiedPeptide:
         result = ""
         for modified_aa in self.modified_aas:
             if modified_aa.position_0based == ModifiedAminoacid.POSITION_NTERM:
-                result = result + modified_aa.mass_to_string()
+                result = result + "(" + str(modified_aa.mass_diff) + ")"
         for i in xrange(0, len(self.sequence)):
             aa = self.sequence[i]
             result = result + aa
@@ -601,8 +602,56 @@ class ModifiedPeptide:
                     result = result + modified_aa.mass_to_string()
         for modified_aa in self.modified_aas:
             if modified_aa.position_0based == ModifiedAminoacid.POSITION_CTERM:
-                result = result + modified_aa.mass_to_string()
+                result = result + "(" + str(modified_aa.mass_diff) + ")"
         return result
+
+    @staticmethod
+    def from_string(modpep_str):
+        # walk through the peptide string, detecting modifications.
+        modified_aas = []
+        # first, handle the n- and c-terminus specially
+        if modpep_str.startswith("("):
+            nterm_massdiff = float(modpep_str[1:modpep_str.find(")")])
+            modified_aas.append(ModifiedAminoacid(ModifiedAminoacid.POSITION_NTERM, nterm_massdiff, nterm_massdiff))
+            modpep_str = modpep_str[modpep_str.find(")") + 1:]
+        if modpep_str.endswith(")"):
+            nterm_massdiff = float(modpep_str[modpep_str.find("(") + 1:-1])
+            modified_aas.append(ModifiedAminoacid(ModifiedAminoacid.POSITION_CTERM, nterm_massdiff, nterm_massdiff))
+            modpep_str = modpep_str[0:modpep_str.find("(")]
+        peptide_seq_list = []
+        while len(modpep_str) > 0:
+            aa = modpep_str[0]
+            assert(aa.isalpha())
+            peptide_seq_list.append(aa.upper())
+            modpep_str = modpep_str[1:]
+            if len(modpep_str) > 0 and '[' == modpep_str[0]:
+                aa_mod_mass = float(modpep_str[1:modpep_str.find("]")])
+                mass_diff = aa_mod_mass - AA_UNMOD_MASSES[aa]
+                modpep_str = modpep_str[modpep_str.find("]") + 1:]
+                modified_aa = ModifiedAminoacid(len(peptide_seq_list) - 1, aa_mod_mass, mass_diff)
+                modified_aas.append(modified_aa)
+        return ModifiedPeptide("".join(peptide_seq_list), modified_aas)
+
+
+    def make_posmassdifflist_ntermdiff_ctermdiff(self):
+        """
+        make a position-by-position list of mass differences
+        :return: position-by-position mass differences, n-term diff and cterm diff
+        """
+        position_massdiff_list = [0.0] * len(self.sequence)
+        nterm_diff = 0.0
+        cterm_diff = 0.0
+        for modified_aa in self.modified_aas:
+            if modified_aa.position_0based == ModifiedAminoacid.POSITION_NTERM:
+                nterm_diff += modified_aa.mass_diff
+            elif modified_aa.position_0based == ModifiedAminoacid.POSITION_CTERM:
+                cterm_diff += modified_aa.mass_diff
+            else:
+                position_massdiff_list[modified_aa.position_0based] += modified_aa.mass_diff
+        return position_massdiff_list, nterm_diff, cterm_diff
+
+
+
 
 
 def calc_mass_with_mods(peptide_sequence, modified_aas):
@@ -681,6 +730,8 @@ def calc_all_possible_masses(peptide_seq, peptide_mods):
                                     (peptide_seq.count(mod.aa) * mod.massdiff))
 
     return list(add_masses_for_mods_recurse(peptide_seq, var_mods, mass_no_var_mods))
+
+
 
 
 def add_masses_for_mods_recurse(pep_sequence, remaining_varmods,

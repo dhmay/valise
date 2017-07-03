@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+"""
+Encode theoretical spectra representing a list of peptides
+"""
+
+import argparse
+import logging
+from timeit import default_timer as timer
+from pyvalise.proteomics import spectra, peptides
+from pyvalise.io import ms2_io
+
+__author__ = "Damon May"
+__copyright__ = "Copyright (c) 2017 Damon May"
+__license__ = ""
+__version__ = ""
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_MODS_STRING = "C" + str(peptides.AminoacidModification.MOD_IODOACETAMIDE_MASSDIFF) + \
+    ",M" + str(peptides.AminoacidModification.MOD_OXIDATION_MASSDIFF) + "V"
+
+
+def declare_gather_args():
+    """
+    Declare all arguments, parse them, and return the args dict.
+    Does no validation beyond the implicit validation done by argparse.
+    return: a dict mapping arg names to values
+    """
+
+    # declare args
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('infile', type=argparse.FileType('r'),
+                        help='input file with peptide sequences, one per line')
+    parser.add_argument('--modifications', help='modifications to use when encoding',
+                        default=DEFAULT_MODS_STRING)
+    parser.add_argument('--out', type=argparse.FileType('w'), required=True,
+                        help='output .ms2 file')
+    parser.add_argument('--outmodpepfile', type=argparse.FileType('w'),
+                        help='output file with one ModifiedPeptide string per line')
+
+    parser.add_argument('--debug', action="store_true", help='Enable debug logging')
+    return parser.parse_args()
+
+
+def main():
+    args = declare_gather_args()
+    # logging
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s: %(message)s")
+    # add any additional loggers (for other modules) here
+    all_loggers = [logger]
+    if args.debug:
+        for a_logger in all_loggers:
+            a_logger.setLevel(logging.DEBUG)
+
+    script_start_time = timer()
+    logger.debug("Start time: %s" % script_start_time)
+
+    ms2_io.write_header(args.out)
+
+    modifications = peptides.AminoacidModification.parse_modlist_string(args.modifications)
+
+    source_peptides = [line.strip() for line in args.infile]
+    n_written = 0
+    for peptide in source_peptides:
+        modpep_spectrum_map = spectra.make_peptide_theoretical_spectra(peptide, modifications)
+        for modpep in modpep_spectrum_map:
+            n_written += 1
+            args.outmodpepfile.write(peptide + "\t" + modpep.to_string() + '\n')
+            ms2_io.write_scan(modpep_spectrum_map[modpep], args.out)
+    print("Wrote %d spectra to %s" % (n_written, args.out.name))
+    args.out.close()
+    if args.outmodpepfile:
+        args.outmodpepfile.close()
+        print("Wrote ModifiedPeptides to %s" % (args.outmodpepfile.name))
+
+
+
+    logger.info("End time: %s. Elapsed time: %s" % (timer(), timer() - script_start_time))
+
+
+main()

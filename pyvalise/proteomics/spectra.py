@@ -19,7 +19,75 @@ __copyright__ = "Copyright (c) 2012-2014 Fred Hutchinson Cancer Research Center"
 __license__ = ""
 __version__ = ""
 
+# defaults for min and max m/z when generating theoretical spectra
+DEFAULT_MIN_THEORETICAL_FRAGMENT_MZ = 0.0
+DEFAULT_MAX_THEORETICAL_FRAGMENT_MZ = 5000.0
+
+# value to use for all theoretical peak intensities. Shouldn't matter unless
+# the result is passed to something that does filtering.
+THEORETICAL_PEAK_INTENSITY = 100.0
+
 log = logging.getLogger(__name__)
+
+
+def make_peptide_theoretical_spectra(peptide_sequence, aa_modifications,
+                                     precursor_charges=(2, 3),
+                                     fragment_charges=(1,),
+                                     min_fragment_mz=DEFAULT_MIN_THEORETICAL_FRAGMENT_MZ,
+                                     max_fragment_mz=DEFAULT_MAX_THEORETICAL_FRAGMENT_MZ):
+    """
+    given a peptide sequence and a list of modifications, make all the theoretical
+    spectra for all modified versions of the peptide. Return a map from ModifiedPeptide to MS2Spectrum
+    :param peptide_sequences: 
+    :param aa_modifications: 
+    :param precursor_charges: charge states for precursor
+    :param fragment_charges: 
+    :param min_fragment_mz: 
+    :param max_fragment_mz: 
+    :return: 
+    """
+    modpep_spectrum_map = {}
+    modified_peptides_this_seq = peptides.calc_uniquemass_modpeps(peptide_sequence, aa_modifications)
+    for modpep in modified_peptides_this_seq:
+        # assign scan numbers sequentially. Dummy RTs of 0.0
+        for charge in precursor_charges:
+            modpep_spectrum_map[modpep] = make_theoretical_spectrum(modpep, charge, fragment_charges,
+                                                                    min_fragment_mz, max_fragment_mz,
+                                                                    len(modpep_spectrum_map) + 1,
+                                                                    0.0)
+    return modpep_spectrum_map
+
+
+def make_theoretical_spectrum(modified_peptide, charge,
+                              fragment_charges=(1,),
+                              min_fragment_mz=DEFAULT_MIN_THEORETICAL_FRAGMENT_MZ,
+                              max_fragment_mz=DEFAULT_MAX_THEORETICAL_FRAGMENT_MZ,
+                              scan_number=0, retention_time=0.0):
+    """
+    Make a theoretical spectrum for a theoretical peptide with completely-defined modifications
+    :param peptide_sequence: 
+    :param position_massdiff_list: 
+    :param fragment_charges: 
+    :param n_terminal_massdiff: 
+    :param c_terminal_massdiff: 
+    :param min_fragment_mz: 
+    :param max_fragment_mz: 
+    :param scan_number: 
+    :param retention_time: 
+    :return: 
+    """
+    peptide_sequence = modified_peptide.sequence
+    position_massdiff_list, nterm_deltamass, cterm_deltamass = modified_peptide.make_posmassdifflist_ntermdiff_ctermdiff()
+    theoretical_peak_mzs = peptides.calc_theoretical_peak_mzs(peptide_sequence, fragment_charges,
+                                                              position_massdiff_list,
+                                                              min_fragment_mz, max_fragment_mz,
+                                                              nterm_deltamass=nterm_deltamass,
+                                                              cterm_deltamass=cterm_deltamass)
+    theoretical_peak_intensities = [THEORETICAL_PEAK_INTENSITY] * len(theoretical_peak_mzs)
+    precursor_mz = peptides.calc_mz_from_mplush_charge(modified_peptide.mass, charge)
+
+    return MS2Spectrum(scan_number, retention_time, theoretical_peak_mzs, theoretical_peak_intensities,
+                       precursor_mz, charge)
 
 
 def sqrt_normalize_intensities(intensity_values):
