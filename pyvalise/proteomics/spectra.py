@@ -87,7 +87,7 @@ def make_theoretical_spectrum(modified_peptide, charge,
                                                               nterm_deltamass=nterm_deltamass,
                                                               cterm_deltamass=cterm_deltamass)
     theoretical_peak_intensities = [THEORETICAL_PEAK_INTENSITY] * len(theoretical_peak_mzs)
-    precursor_mz = peptides.calc_mz_from_mplush_charge(modified_peptide.mass, charge)
+    precursor_mz = peptides.calc_mz_from_mplush_charge(modified_peptide.mass + charge * peptides.HYDROGEN_MASS, charge)
 
     return MS2Spectrum(scan_number, retention_time, theoretical_peak_mzs, theoretical_peak_intensities,
                        precursor_mz, charge)
