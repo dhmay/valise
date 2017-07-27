@@ -120,10 +120,8 @@ def main():
             for yvals in yvalses:
                 max_yval = max(max_yval, max(yvals))
             y_axis_limits = args.minyaxisvalue, max_yval + 0.1 * (max_yval - args.minyaxisvalue)
-            print("Whee! %s, %s" % y_axis_limits)
 
         if len(args.columnsy) == 1:
-            print("Whee! %s, %s" % y_axis_limits)
             mycharts.append(charts.line_plot(xvals, yvalses[0], title="",
                                              xlabel=x_axis_label, ylabel=y_axis_label,
                                              should_logx=args.plotlogx,

@@ -7,6 +7,7 @@ import logging
 from scipy import sparse
 cimport cython
 from cpython cimport array
+import math
 import numpy as np
 cimport numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
@@ -113,24 +114,26 @@ def bin_spectrum(mz_array, intensity_array,
     cdef float intensity
     cdef int nbins = calc_nbins(fragment_min_mz, fragment_max_mz, bin_size)
     cdef np.ndarray[NDARRAY_DTYPE_t, ndim=1] scan_matrix = np.zeros((nbins,), dtype=NDARRAY_DTYPE)
-    cdef float frag_intensity_sum = 0.0
-
+    # amount of signal excluded because it's too close to the precursor, when normalizing
+    cdef float precursor_signal_to_exclude = 0.0
 
     for peak_idx in xrange(0, len(mz_array)):
         mz = mz_array[peak_idx]
         intensity = intensity_array[peak_idx]
         if mz < fragment_min_mz or mz > fragment_max_mz:
             continue
-        bin_idx = int((mz - fragment_min_mz) / bin_size)
+        bin_idx = int(math.floor((mz - fragment_min_mz) / bin_size))
         if bin_idx < 0 or bin_idx > nbins - 1:
             continue
-        # if we're not excluding the precursor from TIC, or the peak is sufficiently far from the precursor,
-        # add it to the spectrum intensity sum
-        if (not should_normalize_exclude_precursor) or \
-                (abs(precursor_mz - mz) > window_exclude_precursor_signal):
-            frag_intensity_sum += intensity
-        scan_matrix[bin_idx,] = max(scan_matrix[bin_idx,], intensity)
+        if intensity > scan_matrix[bin_idx,]:
+            # if we're excluding the precursor from TIC, and the peak is sufficiently close to the precursor,
+            # add it to the amount of signal we're excluding from spectrum intensity sum
+            if should_normalize_exclude_precursor and \
+                    abs(precursor_mz - mz) < window_exclude_precursor_signal:
+                precursor_signal_to_exclude += intensity
+            scan_matrix[bin_idx,] = intensity
     if should_normalize:
+        frag_intensity_sum = scan_matrix.sum() - precursor_signal_to_exclude
         if frag_intensity_sum > 0:
             # divide intensities by sum
             scan_matrix /= frag_intensity_sum
