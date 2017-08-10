@@ -30,6 +30,7 @@ def declare_gather_args():
                         help='input file')
     parser.add_argument('--labelcol', help='column for labels below each cluster of bars')
     parser.add_argument('--title', help='title', default='')
+    parser.add_argument('--columns', help='column names (if not specified, all but label)')
     parser.add_argument('--rotatelabels', help='rotate labels 90 degrees?', action="store_true")
     parser.add_argument('--outpdf', required=True, type=argparse.FileType('w'),
                         help='output file')
@@ -52,9 +53,14 @@ def main():
 
     reader = csv.DictReader(args.infile, delimiter='\t')
     value_columns = reader.fieldnames[:]
+    if args.columns:
+        value_columns = args.columns.split(",")
+        for colname in value_columns:
+            assert colname in reader.fieldnames
     if args.labelcol not in reader.fieldnames:
         print("Label column %s not in file!" % args.labelcol)
-    value_columns.remove(args.labelcol)
+    if not args.columns:
+        value_columns.remove(args.labelcol)
     valueses = []
     for _ in value_columns:
         valueses.append([])
