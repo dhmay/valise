@@ -475,6 +475,7 @@ def cdfs(valueses, xlabel='value', labels=None, title='CDF', n_bins=500):
         y_values = freq.cumcount / len(values)
         logger.debug("binsize: %f" % freq.binsize)
         logger.debug("range: %f" % (freq.binsize * n_bins))
+        logger.debug("y range: %f - %f" % (min(y_values), max(y_values)))
         x_valueses.append(x_values)
         y_valueses.append(y_values)
 
@@ -497,7 +498,7 @@ def multiscatter(x_valueses, y_valueses, title=None,
     :param title:
     :param xlabel:
     :param ylabel:
-    :param pointsize:
+    :param pointsize: If one value, use that value. If a list, use that list in order.
     :param colors:
     :param cmap:
     :param show_colorbar:
@@ -510,13 +511,18 @@ def multiscatter(x_valueses, y_valueses, title=None,
 
     for i in xrange(0, len(x_valueses)):
        assert(len(x_valueses[i]) == len(y_valueses[i]))
+    if type(pointsize) == list:
+        pointsizes = pointsize
+        assert len(pointsizes) == len(x_valueses)
+    else:
+        pointsizes = [pointsize] * len(x_valueses)
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if title:
         ax.set_title(title)
     for i in xrange(0, len(x_valueses)):
         logger.debug("multiscatter set %d, color %s" % (i, colors[i]))
-        ax.scatter(x_valueses[i], y_valueses[i], s=pointsize, facecolors=colors[i], edgecolors='none',
+        ax.scatter(x_valueses[i], y_valueses[i], s=pointsizes[i], facecolors=colors[i], edgecolors='none',
                    alpha=ALPHA_FOR_MULTISCATTER)
     if labels:
         add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=labels, rotate_labels=rotate_labels)
