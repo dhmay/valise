@@ -9,6 +9,7 @@ import argparse
 import logging
 from datetime import datetime
 import csv
+import sys
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -33,6 +34,8 @@ def declare_gather_args():
     parser.add_argument('--filtercolumn', help='other column to filter on')
     parser.add_argument('--maxfiltervalue', type=float,
                         help='maximum value of filtercolumn')
+    parser.add_argument('--minfiltervalue', type=float,
+                        help='minimum value of filtercolumn')
     parser.add_argument('--labels', help='labels for files')
     parser.add_argument('--title', default='', help='chart title')
     parser.add_argument('--delimiter', default='\t', help='delimiter between columns')
@@ -67,7 +70,11 @@ def main():
         args.maxfiltervalue = 0.01
 
     if args.filtercolumn:
-        assert args.maxfiltervalue
+        assert args.maxfiltervalue or args.minfiltervalue
+    if not args.maxfiltervalue:
+        args.maxfiltervalue=sys.float_info.max
+    if not args.minfiltervalue:
+        args.minfiltervalue=sys.float_info.min
 
     # do stuff here
     value_sets = []
@@ -82,7 +89,7 @@ def main():
             n_kept_rows = 0
             for row in reader:
                 n_total_rows += 1
-                if not args.filtercolumn or float(row[args.filtercolumn]) < args.maxfiltervalue:
+                if not args.filtercolumn or args.minfiltervalue < float(row[args.filtercolumn]) < args.maxfiltervalue:
                     n_kept_rows += 1
                     value_set.add(row[args.column])
             print("File %s, used %d of %d rows" % (infile.name, n_kept_rows, n_total_rows))

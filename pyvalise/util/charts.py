@@ -520,6 +520,8 @@ def multiscatter(x_valueses, y_valueses, title=None,
     ax = figure.add_subplot(1, 1, 1)
     if title:
         ax.set_title(title)
+    logger.debug("len(x_valueses): %d" % len(x_valueses))
+
     for i in xrange(0, len(x_valueses)):
         logger.debug("multiscatter set %d, color %s" % (i, colors[i]))
         ax.scatter(x_valueses[i], y_valueses[i], s=pointsizes[i], facecolors=colors[i], edgecolors='none',

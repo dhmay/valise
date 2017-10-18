@@ -75,7 +75,8 @@ def proportional_venn_from_lists(lists, title=None, labels=None):
         intersection_size = len(sets[0].intersection(sets[1]))
         logger.debug("Intersection size: %d. Size 1: %d. Size2 2: %d" % (intersection_size, len(sets[0]), len(sets[1])))
         figure = proportional_venn_from_counts_2d(len(sets[0]), len(sets[1]),
-                                                  intersection_size, labels=(labels[0], labels[1]))
+                                                  intersection_size, labels=(labels[0], labels[1]),
+                                                  title=title)
     elif len(lists) == 3:
         figure = plt.figure()
         ax = figure.add_subplot(1, 1, 1)

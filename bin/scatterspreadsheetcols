@@ -62,6 +62,7 @@ def main():
                         format="%(asctime)s %(levelname)s: %(message)s")
     if args.debug:
         logger.setLevel(logging.DEBUG)
+        charts.logger.setLevel(logging.DEBUG)
 
 
     xvals = []
@@ -92,8 +93,14 @@ def main():
     mycharts = []
     if args.outpdf:
         print("Building charts...")
-        col1fortitle = args.column1
-        col2fortitle = args.column2
+        xlabel = args.column1
+        if args.xlabel:
+            xlabel = args.xlabel
+        ylabel = args.column2
+        if args.ylabel:
+            ylabel = args.ylabel
+        col1fortitle = xlabel
+        col2fortitle = ylabel
         if args.neglog10x:
             col1fortitle = "-log10(" + args.column1 + ")"
         if args.neglog10y:
@@ -106,12 +113,7 @@ def main():
             title = title + " (r=" + ("%.3f" % xy_cor) + ")"
         if args.title is not None:
             title = args.title
-        xlabel = args.column1
-        if args.xlabel:
-            xlabel = args.xlabel
-        ylabel = args.column2
-        if args.ylabel:
-            ylabel = args.ylabel
+
         if args.colorcolumn:
             if args.colorlabels:
                 labels = args.colorlabels.split(',')
@@ -120,6 +122,7 @@ def main():
                 for i in xrange(0, len(xvals)):
                     color = colorvals[i]
                     if color not in color_xvals_map:
+                        print("new color: %s" % color)
                         color_xvals_map[color] = []
                         color_yvals_map[color] = []
                     color_xvals_map[color].append(xvals[i])
