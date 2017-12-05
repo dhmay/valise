@@ -7,6 +7,7 @@ import argparse
 import logging
 from datetime import datetime
 from pyvalise.util import charts
+import csv
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -29,6 +30,8 @@ def declare_gather_args():
                         help='input file(s)')
     parser.add_argument('--labels', help='comma-separated labels for violins')
     parser.add_argument('--title', help='title', default='')
+    parser.add_argument('--columns',
+                        help='comma-separated columns to use, if only one file provided. Special value: "all" for all colulmns of a single file. If this is not provided, will fail on one multi-column file')
     parser.add_argument('--rotatelabels', help='rotate labels 90 degrees?', action="store_true")
     parser.add_argument('--outpdf', required=True, type=argparse.FileType('w'),
                         help='output file')
@@ -50,10 +53,28 @@ def main():
     logger.debug("Start time: %s" % script_start_time)
 
     valueses = []
+    columns = None
+    if args.columns and args.columns != 'all':
+        columns = args.columns.split(',')
+        for _ in columns:
+            valueses.append([])
+        assert(len(args.infiles) == 1)
     for infile in args.infiles:
-        valueses.append([float(x.strip()) for x in infile])
+        reader = csv.DictReader(infile, delimiter='\t')
+        if args.columns == 'all':
+            columns = reader.fieldnames
+            for _ in columns:
+                valueses.append([])
+        if columns:
+            for row in reader:
+                for i in xrange(0, len(columns)):
+                    valueses[i].append(float(row[columns[i]]))
+        else:
+            valueses.append([float(x.strip()) for x in infile])
     if args.labels:
         labels = args.labels.split(',')
+    elif columns:
+        labels = columns
     else:
         labels = ['' for _ in valueses]
     assert(len(valueses) == len(labels))

@@ -50,7 +50,9 @@ def main():
         for column in columns:
             assert(column in reader.fieldnames)
     else:
+        print("No named columns specified. Using all columns:")
         columns = reader.fieldnames
+        print(",".join(columns))
     col_values_map = {}
     for column in columns:
         col_values_map[column] = []
@@ -79,10 +81,10 @@ def main():
                 continue
             if args.plotlog:
                 values = [math.log(value) for value in values]
-            mycharts.append(charts.hist(values, column, bins=args.bins))
-
+            mycharts.append(charts.hist(values, title=column, bins=args.bins))
+            print("Making histogram for column %s with %d values" % (column, len(values)))
         charts.write_pdf(mycharts, args.outpdf)
-        print("Wrote charts to %s" % args.outpdf.name)
+        print("Wrote %d charts to %s" % (len(mycharts), args.outpdf.name))
 
 
 start_time = datetime.now()
