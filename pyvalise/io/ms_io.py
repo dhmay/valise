@@ -6,7 +6,7 @@ Reading and writing of MS-related files (abstracted from ms2_io, mzml_io)
 
 import logging
 import ms2_io
-import mzml_io
+import mzml_io, mzxml_io
 import gzip
 
 __author__ = "Damon May"
@@ -28,10 +28,14 @@ def read_spectra(spectra_file, scan_numbers_to_keep=None, level=None):
     handle = spectra_file
     if spectra_file.name.endswith('.gz'):
         handle = gzip.open(spectra_file.name)
-    if '.ms2' in spectra_file.name:
+    filename_ext_lower = spectra_file.name.lower()[spectra_file.name.rfind("."):]
+    logger.debug("read_spectra, file extension: {0}".format(filename_ext_lower))
+    if filename_ext_lower == '.ms2':
         io_module = ms2_io
-    elif '.mzML' in spectra_file.name:
+    elif filename_ext_lower == '.mzml':
         io_module = mzml_io
+    elif filename_ext_lower == '.mzxml':
+        io_module = mzxml_io
     else:
         raise ValueError('yield_kept_spectra, can\'t determine file type from name. Name=%s' % spectra_file.name)
     if scan_numbers_to_keep is not None:
