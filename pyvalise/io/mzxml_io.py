@@ -51,7 +51,7 @@ def read_scans(mzxml_file, ms_levels=(1, 2)):
     """
     with mzxml.MzXML(mzxml_file) as reader:
         for scan in reader:
-            if scan['msLevel'] in ms_levels:
+            if int(scan['msLevel']) in ms_levels:
                 yield read_scan(scan)
 
 
@@ -62,16 +62,18 @@ def read_scan(scan):
     :return:
     """
     # see below for the byzantine intricacies of the scan object
-    ms_level = scan['ms level']
-    scan_number = int(scan['id'][scan['id'].index('scan=') + 5:])
+    ms_level = int(scan['msLevel'])
+    scan_number = int(scan['id'])
     mz_array = scan['m/z array']
     intensity_array = scan['intensity array']
-    retention_time = scan['scanList']['scan'][0]['scan start time']
+    retention_time = float(scan['retentionTime'])
     if ms_level == 1:
         return spectra.MSSpectrum(scan_number, retention_time, ms_level,
                                   mz_array,
                                   intensity_array)
     elif ms_level == 2:
+        print(scan)
+        precurso_mz = scan['precursorMz']['precursorMz']
         precursor_selected_ion_map = scan['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]
         precursor_mz = precursor_selected_ion_map['selected ion m/z']
         charge = None
@@ -90,36 +92,34 @@ def read_scan(scan):
         raise ValueError("Unhandleable scan level %d" % ms_level)
 
 
-# example pyteomics.mzxml ms2 scan object:
-#
-#{'MSn spectrum': '',
-# 'base peak intensity': 97570.0,
-# 'base peak m/z': 288.922,
-# 'centroid spectrum': '',
-# 'count': 2,
-# 'defaultArrayLength': 11,
-# 'highest observed m/z': 2325.92,
-# 'id': 'controllerType=0 controllerNumber=1 scan=823',
-# 'index': 0,
-# 'intensity array': array([  8935.11914062,  16606.33789062,   9164.421875  ,   4691.23339844,
-#         97570.046875  ,  10380.35546875,   4243.56591797,  26311.13671875,
-#          4218.36376953,   4853.49853516,   5048.49267578], dtype=float32),
-# 'lowest observed m/z': 208.275,
-# 'm/z array': array([  208.27484131,   208.29246521,   208.3107605 ,   220.93244934,
-#          288.92218018,   356.91146851,   407.6151123 ,   424.89764404,
-#          512.6675415 ,  1729.26879883,  2325.91601562]),
-# 'ms level': 2,
-# 'positive scan': '',
-# 'precursorList': {'count': 1,
-#  'precursor': [{'activation': {'beam-type collision-induced dissociation': ''},
-#    'selectedIonList': {'count': 1,
-#     'selectedIon': [{'charge state': 3.0,
-#       'peak intensity': 121445.0,
-#       'selected ion m/z': 764.83}]},
-#    'spectrumRef': 'controllerType=0 controllerNumber=1 scan=822'}]},
-# 'scanList': {'count': 1,
-#  'no combination': '',
-#  'scan': [{'instrumentConfigurationRef': 'IC1', 'scan start time': 190.209}]},
-# 'total ion current': 227645.0}
+# scan keys:
+# ['polarity', 'basePeakIntensity', 'scanType', 'intensity array',
+# 'collisionEnergy', 'retentionTime', 'basePeakMz', 'peaksCount',
+# 'msLevel', 'lowMz', 'num', 'm/z array', 'totIonCurrent', 'filterLine',
+# 'highMz', 'id', 'precursorMz']
+
+# scan:
+# {'polarity': '+',
+# 'basePeakIntensity': 3566.73,
+# 'scanType': 'Full',
+# 'intensity array': array([ 1644.8190918 ,  1435.2199707 ,  1511.34741211,  1842.39599609,
+#        1631.34814453,  1739.75708008,  1924.64733887,  2468.96166992,
+#        2293.41625977,  2619.66186523,  2719.72924805,  2413.22680664,
+#        2607.99462891,  2888.88549805,  2599.54492188,  3323.59326172,
+#        3566.73071289], dtype=float32), 'collisionEnergy': 25.0,
+# 'retentionTime': 1205.99,
+# 'basePeakMz': 1726.38,
+# 'peaksCount': 17,
+# 'msLevel': '2', 'lowMz': 172.891,
+# 'num': '14',
+# 'm/z array': array([  172.89068604,   179.21194458,   212.1013031 ,   222.95936584,
+#         229.01470947,   246.40187073,   262.47314453,   332.75473022,
+#         446.77319336,   470.28076172,   473.73666382,   668.23144531,
+#         883.44836426,  1028.12353516,  1282.01599121,  1608.28796387,
+#        1726.38085938], dtype=float32),
+# 'totIonCurrent': 39231.3,
+# 'filterLine': 'FTMS + p NSI d Full ms2 678.34@hcd25.00 [140.00-2100.00]',
+#  'highMz': 1726.38, 'id': '14',
+# 'precursorMz': [{'precursorIntensity': 6760.85, 'activationMethod': 'HCD', 'precursorMz': 678.0021461}]}
 
 
