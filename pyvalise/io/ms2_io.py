@@ -93,7 +93,8 @@ def read_ms2_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=
 def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=False,
                require_rt=False, should_renumber_if_needed=False):
     """
-    yield all scans in the file at ms2_filepath
+    yield all scans in the file at ms2_filepath.
+    If the scan has multiple Z lines, keep the first one.
     :param ms2_file:
     :param precursor_from_zline:
     :param should_calc_zs_mz_diffs:
@@ -108,9 +109,10 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
     scan_number = 0
     retention_time = None
     info_name_value_dict = {}
-    charge = None
     fragment_mzs = []
     fragment_intensities = []
+    all_charges = list()
+    all_zline_mplush = list()
 
     line_number = 0
 
@@ -118,10 +120,6 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
 
     # did we actually renumber any scans?
     renumbered_scans = False
-
-    # differences in m/z between that on the s-line and that calculated from the z-line
-    zline_sline_precursor_deltas = []
-    zline_sline_masses = []
 
     is_before_first_scan = True
     for line in ms2_file:
@@ -141,36 +139,55 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
             if len(chunks) != 4:
                 raise ValueError("Misformatted line %d.\n%s\n" % (line_number, line))
             # this begins a new scan, so start by writing the old one
+            should_write_scan = False
             if scan_number and (retention_time or not require_rt) and fragment_mzs and fragment_intensities \
-                    and precursor_mz and charge:
+                    and precursor_mz is not None and all_charges:
                 if not retention_time:
                     # if we get here, rt is allowed to be missing, so set it to be 0.0
                     retention_time = 0.0
-                # sometimes, a Z line will have a 0 charge. Punt on those
-                if charge is not None and charge > 0:
-                    logger.debug("0 charge!")
-                    spectrum = spectra.MS2Spectrum(scan_number,
-                                              retention_time,
-                                              fragment_mzs,
-                                              fragment_intensities,
-                                              precursor_mz, charge)
-                    spectrum.info_name_value_dict = info_name_value_dict
-                    yield spectrum
-                    n_yielded += 1
-                    logger.debug("Yielded #%d" % n_yielded)
-                # zero out everything not on this line so that we know if we got it for the next scan
-                charge = None
-                retention_time = None
-                info_name_value_dict = {}
 
+                # use the first z-line for charge determination. This is totally arbitrary!
+                # Must make use of all_charges.
+                charge = all_charges[0]
+
+                # try to figure out mz, charges and masses
+                if precursor_mz == 0:
+                    # we don't have a precursor m/z. Try to infer it from z-lines
+                    if len(all_charges) == len(set(all_charges)):
+                        # only one line per charge. Good! Pick the first for precursor m/z determination.
+                        zline_mass = all_zline_mplush[0]
+                        precursor_mz = peptides.calc_mz_from_mplush_charge(zline_mass, charge)
+                    else:
+                        # cannot determine precursor m/z unambiguously, so don't write this scan
+                        pass
+                else:
+                    # we do have a precursor m/z, so we don't care if there's multiple reporting of the same charge.
+                    # In that case, collapse them.
+                    if len(all_charges) == len(set(all_charges)):
+                        all_charges = list(set(all_charges))
+                if precursor_mz > 0:
+                    should_write_scan = True
+            if should_write_scan:
+                spectrum = spectra.MS2Spectrum(scan_number, retention_time, fragment_mzs, fragment_intensities,
+                                               precursor_mz, charge)
+                info_name_value_dict['all_charges'] = ','.join([str(x) for x in all_charges])
+                spectrum.info_name_value_dict = info_name_value_dict
+                yield spectrum
+                n_yielded += 1
+                logger.debug("Yielded #%d" % n_yielded)
             else:
                 if not is_before_first_scan:
                     logger.debug("Incomplete scan!")
-                    logger.debug("scan_number: %s. rt: %s, precursor_mz: %s, charge: %s" %
-                             (scan_number is not None, retention_time is not None,
-                              precursor_mz is not None, charge is not None))
+                    logger.debug("scan_number: %s. rt: %s, precursor_mz: %s, fragment_mzs: %s, fragment_intensities: %s, charges: %s" %
+                             (str(scan_number), str(retention_time),
+                              str(precursor_mz), len(fragment_mzs) > 0, len(fragment_intensities) > 0, str(all_charges)))
 
-            # new scan, so reset mz and intensity lists
+            # done with writing old scan.
+            # new scan, so reset mz and intensity lists and other things
+            retention_time = None
+            all_charges = list()
+            all_zline_mplush = list()
+            info_name_value_dict = {}
             fragment_mzs = []
             fragment_intensities = []
 
@@ -192,36 +209,16 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
                 info_name_value_dict[name] = value
 
         elif chunks[0] == "Z":
-            logger.debug("Z line")
+            logger.debug("Z line: %s" % line)
             if len(chunks) != 3:
                 raise ValueError("Misformatted Z line:\n%s\n" % line)
             thisline_charge = int(chunks[1])
-            if charge is not None and thisline_charge == 0:
-                # we already have a charge, and this charge is 0. Ignore this line
+            if thisline_charge is None or thisline_charge == 0:
                 continue
-            charge = thisline_charge
-            z_precursor_mplush = float(chunks[2])
-            
-            if charge != 0:
-                zline_precursor_mz = peptides.calc_mz_from_mplush_charge(z_precursor_mplush, charge)
-            if should_calc_zs_mz_diffs:
-                if abs(zline_precursor_mz - precursor_mz) > 0.5:
-                    pass
-                    #print("scan %s, z=%d, S* %f Z* %f, Z_mz* %f" % (scan_number, charge, precursor_mz, z_precursor_mplush, zline_precursor_mz))
+            if thisline_charge > 0:
+                all_charges.append(thisline_charge)
+                all_zline_mplush.append(float(chunks[2]))
 
-                    if (abs((zline_precursor_mz - precursor_mz) * charge)) > 0.5:
-                        print("%d    %f    %f" % (scan_number, (zline_precursor_mz - precursor_mz) * charge,
-                                            ((zline_precursor_mz - precursor_mz) * charge) % peptides.HYDROGEN_MASS))
-                diff_mod = abs((zline_precursor_mz - precursor_mz) * charge) % 1.000495
-                while diff_mod > 1.000495 / 2:
-                    diff_mod -= 1.000495
-                if abs(diff_mod) > 0.2:
-                    print("HUH?! %f" % diff_mod)
-                #zline_sline_precursor_deltas.append(diff_mod)
-                zline_sline_precursor_deltas.append((zline_precursor_mz - precursor_mz) * charge)
-                zline_sline_masses.append(precursor_mz * charge)
-            if precursor_from_zline and zline_precursor_mz is not None:
-                precursor_mz = zline_precursor_mz
         # must be a peak line or junk
         elif len(chunks) == 4 or len(chunks) == 2:
             fragment_mzs.append(float(chunks[0]))
@@ -239,6 +236,8 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
                                        fragment_intensities,
                                        precursor_mz, charge)
         spectrum.info_name_value_dict = info_name_value_dict
+        spectrum.all_charges = all_charges
+        spectrum.all_zline_mplush = all_zline_mplush
         yield spectrum
         n_yielded += 1
     else:
@@ -290,6 +289,7 @@ def write_header(outfile, name_value_dict=None):
             outfile.write("H\t@%s=%s\n" % (name, name_value_dict[name]))
 
 
+
 def write_scan(ms2_spectrum, outfile):
     """
 
@@ -304,8 +304,9 @@ def write_scan(ms2_spectrum, outfile):
     if ms2_spectrum.info_name_value_dict:
         for name in ms2_spectrum.info_name_value_dict:
             outfile.write("I\t@%s=%s\n" % (name, ms2_spectrum.info_name_value_dict[name]))
-    zline_mplush = peptides.calc_mplush_from_mz_charge(ms2_spectrum.precursor_mz,  ms2_spectrum.charge)
-    outfile.write("Z\t%d\t%f\n" % (ms2_spectrum.charge, zline_mplush))
+    for i in xrange(0, len(ms2_spectrum.all_charges)):
+        #zline_mplush = peptides.calc_mplush_from_mz_charge(ms2_spectrum.precursor_mz,  charge)
+        outfile.write("Z\t%d\t%f\n" % (ms2_spectrum.all_charges[i], ms2_spectrum.all_zline_mplush[i]))
     for i in xrange(0, len(ms2_spectrum.intensity_array)):
         outfile.write("%s %s\n" % (ms2_spectrum.mz_array[i], ms2_spectrum.intensity_array[i]))
 
