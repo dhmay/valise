@@ -322,8 +322,8 @@ def write_scan(ms2_spectrum, outfile):
         for name in ms2_spectrum.info_name_value_dict:
             outfile.write("I\t@%s=%s\n" % (name, ms2_spectrum.info_name_value_dict[name]))
     for i in xrange(0, len(ms2_spectrum.all_charges)):
-        #zline_mplush = peptides.calc_mplush_from_mz_charge(ms2_spectrum.precursor_mz,  charge)
-        outfile.write("Z\t%d\t%f\n" % (ms2_spectrum.all_charges[i], ms2_spectrum.all_zline_mplush[i]))
+        zline_mplush = peptides.calc_mplush_from_mz_charge(ms2_spectrum.precursor_mz,  ms2_spectrum.all_charges[i])
+        outfile.write("Z\t%d\t%f\n" % (ms2_spectrum.all_charges[i], zline_mplush))
     for i in xrange(0, len(ms2_spectrum.intensity_array)):
         outfile.write("%s %s\n" % (ms2_spectrum.mz_array[i], ms2_spectrum.intensity_array[i]))
 

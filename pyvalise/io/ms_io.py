@@ -26,9 +26,11 @@ def read_spectra(spectra_file, scan_numbers_to_keep=None, level=None):
     :return:
     """
     handle = spectra_file
-    if spectra_file.name.endswith('.gz'):
-        handle = gzip.open(spectra_file.name)
     filename_ext_lower = spectra_file.name.lower()[spectra_file.name.rfind("."):]
+    if filename_ext_lower == '.gz':
+        handle = gzip.open(spectra_file.name)
+        filename_without_gz = spectra_file.name[:-3]
+        filename_ext_lower = filename_without_gz.lower()[filename_without_gz.rfind("."):]
     logger.debug("read_spectra, file extension: {0}".format(filename_ext_lower))
     if filename_ext_lower == '.ms2':
         io_module = ms2_io
