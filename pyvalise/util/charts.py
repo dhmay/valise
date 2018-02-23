@@ -21,6 +21,8 @@ from matplotlib.lines import Line2D
 from scipy.stats import cumfreq
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
+DEFAULT_COLORMAP_NAME = 'viridis'
+
 
 COLORMAP_REDBLUE = plt.get_cmap('winter')
 
@@ -307,7 +309,8 @@ def line_plot(x_values, y_values, title=None, lowess=False,
               xlabel=None, ylabel=None,
               should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
               y_axis_limits=None, x_axis_limits=None,
-              xtick_positions=None, xtick_labels=None):
+              xtick_positions=None, xtick_labels=None,
+              n_x_axis_ticks=None):
     """trivial line plot"""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -333,6 +336,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
         assert (xtick_labels is not None)
         ax.set_xticks(xtick_positions)
         ax.set_xticklabels(xtick_labels)
+
     return figure
 
 
@@ -365,7 +369,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
               xtick_positions=None, xtick_labels=None,
               show_markers=False, markers=None,
               axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
-              draw_1to1=False, ax=None, linewidth=1.0):
+              draw_1to1=False, ax=None, linewidth=1.0,
+              n_x_axis_ticks=None):
     """
 
     :param x_valueses:
@@ -453,6 +458,8 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
         ax.set_xticklabels(xtick_labels)
     for ax in axes:
         ax.set_aspect(1./ax.get_data_ratio())
+    if n_x_axis_ticks:
+        plt.locator_params(axis='x', nticks=n_x_axis_ticks)
     return figure
 
 
@@ -585,9 +592,10 @@ def hexbin(x_values, y_values, title=None,
 
 def scatterplot(x_values, y_values, title=None, lowess=False,
                 xlabel='', ylabel='', pointsize=1, draw_1to1 = False,
-                colors=None, cmap=None, show_colorbar=False,
+                colors=None, cmap=DEFAULT_COLORMAP_NAME, show_colorbar=False,
                 should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
-                alpha=0.5, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE):
+                alpha=0.5, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
+                n_x_axis_ticks=None):
     """
     scatter plot
     :param x_values:
@@ -632,6 +640,8 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
         plt.xscale('log', basex=log_base)
     if show_colorbar:
         plt.colorbar(myscatter)
+    if n_x_axis_ticks:
+        plt.locator_params(axis='x', nticks=n_x_axis_ticks)
     return figure
 
 
