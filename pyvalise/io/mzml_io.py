@@ -5,22 +5,18 @@ mzML reading
 """
 
 import logging
-from pyvalise.proteomics import spectra
 from pyteomics import mzml
+
+import parammedic.util
 
 
 __author__ = "Damon May"
-__copyright__ = "Copyright (c) 2012-2014 Fred Hutchinson Cancer Research Center"
+__copyright__ = "Copyright (c) 2016 Damon May"
 __license__ = ""
 __version__ = ""
 
-PEPXML_NS_URL = "http://regis-web.systemsbiology.net/pepXML"
-PEPXML_NS = "{" + PEPXML_NS_URL + "}"
 
-# minimum ratio, for pegging 0-ratio values
-MIN_RATIO = 0.001
-
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def retrieve_scans(mzml_file, scan_numbers):
@@ -37,57 +33,110 @@ def retrieve_scans(mzml_file, scan_numbers):
 
 
 def read_ms2_scans(mzml_file):
-    return read_scans(mzml_file, ms_levels=[2])
+    return read_scans(mzml_file, [2])
 
 
-def read_scans(mzml_file, ms_levels=(1, 2)):
+def read_scans(mzml_file, ms_levels=(1, 2), should_renumber_ifmissing=True):
     """
     yields all spectra from an mzML file with level in ms_levels, or
     all processable scans if ms_levels not specified
     :param mzml_file:
     :param ms_levels:
     :param min_pprophet:
+    :param should_renumber_ifmissing: If this is true and we're unable to get integer
+    scan numbers from the spactra, renumber them from 1 to N. If false, fail if we
+    can't parse an integer from the scan number field
     :return:
     """
     with mzml.MzML(mzml_file) as reader:
+        cur_scanidx_1based = 0
         for scan in reader:
+            cur_scanidx_1based += 1
             if scan['ms level'] in ms_levels:
-                yield read_scan(scan)
+                # ignore this scan if we get a ValueError.
+                # ValueError is only raised if we can't infer charge.
+                # If we still have enough scans where we could infer charge, OK to
+                # ignore these.
+                try:
+                    yield read_scan(scan,
+                                    default_scan_number=cur_scanidx_1based if should_renumber_ifmissing else None)
+                except ValueError as e:
+                    logger.debug("Warning! Failed to read scan: %s" % e)
 
 
-def read_scan(scan):
+def read_scan(scan, default_scan_number=None):
     """
-
+    Read a single scan into our representation
     :param scan:
     :return:
     """
     # see below for the byzantine intricacies of the scan object
     ms_level = scan['ms level']
-    scan_number = int(scan['id'][scan['id'].index('scan=') + 5:])
+    id_field = scan['id']
+    if 'scan=' in id_field:
+        scan_number = int(id_field[id_field.index('scan=') + len('scan='):])
+    elif default_scan_number is not None:
+        scan_number = default_scan_number
+    else:
+
+        raise ValueError('cannot parse scan number from id attribute: {}'.format(id_field))
+
     mz_array = scan['m/z array']
     intensity_array = scan['intensity array']
     retention_time = scan['scanList']['scan'][0]['scan start time']
+
     if ms_level == 1:
-        return spectra.MSSpectrum(scan_number, retention_time, ms_level,
-                                  mz_array,
-                                  intensity_array)
+        return parammedic.util.MSSpectrum(scan_number, retention_time,
+                                          mz_array,
+                                          intensity_array)
     elif ms_level == 2:
         precursor_selected_ion_map = scan['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]
         precursor_mz = precursor_selected_ion_map['selected ion m/z']
-        charge = None
         if 'charge state' in precursor_selected_ion_map:
             charge = precursor_selected_ion_map['charge state']
         elif 'possible charge state' in precursor_selected_ion_map:
             charge = precursor_selected_ion_map['possible charge state']
         else:
-            raise ValueError("Could not find charge for scan %d" % scan_number)
+            raise ValueError("Could not find charge for scan {}. Fields available: {}".format(
+                scan_number, precursor_selected_ion_map.keys()))
 
-        return spectra.MS2Spectrum(scan_number, retention_time,
-                                   mz_array,
-                                   intensity_array,
-                                   precursor_mz, charge)
+        # damonmay adding for activation type histogram.
+        # a scan looks like this:
+            # {'count': 2, 'index': 3, 'highest observed m/z': 663.433410644531,
+            # 'm/z array': array([ 101.05975342,  105.96199036,  109.10111237,  111.11677551, ...])}
+            # , dtype=float32), 'precursorList': {'count': 1, 'precursor':
+            # [{'selectedIonList': {'count': 1, 'selectedIon': [{'charge state': 2.0,
+            # 'peak intensity': 6005243.5, 'selected ion m/z': 337.715426720255}]},
+            # 'activation': {'beam-type collision-induced dissociation': '', 'collision energy': 32.0},
+            # 'spectrumRef': 'controllerType=0 controllerNumber=1 scan=3',
+        # etc
+        activation_type = None
+        if 'precursorList' in scan:
+            preclist = scan['precursorList']
+            if 'count' in preclist and preclist['count'] == 1 and \
+                    'precursor' in preclist:
+                precursor = preclist['precursor'][0]
+                if 'activation' in precursor:
+                    # precursor['activation'] is a weird dict that looks like this:
+                    # 'activation': {'beam-type collision-induced dissociation': '', 'collision energy': 25.0}
+                    activation_type_dict = precursor['activation']
+                    # this method if figuring out the activation type is very brittle.
+                    # because the keys in this dictionary aren't ordered, if there are multiple keys
+                    # I will simply assign the first one I pull out, which is basically at random.
+                    # Then again, there really shouldn't be multiple activation type cvParams that
+                    # aren't "collision energy". Then again, I'm sure we'll encounter them eventually.
+                    for key in activation_type_dict:
+                        if key != 'collision energy':
+                            activation_type = key
+                            break
+
+        return parammedic.util.MS2Spectrum(scan_number, retention_time,
+                                           mz_array,
+                                           intensity_array,
+                                           precursor_mz, charge,
+                                           activation_type=activation_type)
     else:
-        raise ValueError("Unhandleable scan level %d" % ms_level)
+        logger.debug("Unhandleable scan level %d" % ms_level)
 
 
 # example pyteomics.mzml ms2 scan object:
