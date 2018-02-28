@@ -595,7 +595,7 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
                 colors=None, cmap=DEFAULT_COLORMAP_NAME, show_colorbar=False,
                 should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
                 alpha=0.5, axis_tick_font_size=DEFAULT_AXIS_TICK_FONTSIZE,
-                n_x_axis_ticks=None):
+                n_x_axis_ticks=None, y_axis_limits=None):
     """
     scatter plot
     :param x_values:
@@ -642,6 +642,8 @@ def scatterplot(x_values, y_values, title=None, lowess=False,
         plt.colorbar(myscatter)
     if n_x_axis_ticks:
         plt.locator_params(axis='x', nticks=n_x_axis_ticks)
+    if y_axis_limits is not None:
+        plt.ylim(y_axis_limits)
     return figure
 
 
