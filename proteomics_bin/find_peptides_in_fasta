@@ -9,6 +9,7 @@ import argparse
 import logging
 from datetime import datetime
 from pyvalise.io import fasta_io
+from pyvalise.proteomics import peptides
 
 __author__ = "Damon May"
 __copyright__ = "Copyright (c) 2015 Damon May"
@@ -31,6 +32,7 @@ def declare_gather_args():
                         help='input peptides file')
     parser.add_argument('fasta', type=argparse.FileType('r'),
                         help='input fasta file')
+    parser.add_argument('--maxmissedcleavages', type=int, default=3)
     parser.add_argument('--listproteins', action="store_true", help='List the proteins each peptide belongs to')
 
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
@@ -50,21 +52,36 @@ def main():
     logger.debug("Start time: %s" % script_start_time)
 
     # do stuff here
-    peptides = set([line.strip() for line in args.pepfile])
+    all_peptides = set([line.strip() for line in args.pepfile])
+    # see if we can get away with fewer missed cleavages than specified
+    pep_missed_cleavage_counts = [peptides.calc_peptide_missed_cleavages(pep) for pep in all_peptides]
+    max_pep_missed_cleavages = max(pep_missed_cleavage_counts)
+    print("Maximum missed cleavages in any peptide: {}".format(max_pep_missed_cleavages))
+    if max_pep_missed_cleavages < args.maxmissedcleavages:
+        print("  Reducing missed cleavages in trypsinization from {} to {}".format(
+            args.maxmissedcleavages, max_pep_missed_cleavages
+        ))
+        args.maxmissedcleavages = max_pep_missed_cleavages
+    elif max_pep_missed_cleavages > args.maxmissedcleavages:
+        print("WARNING! peptides contain more missed cleavages than allowed. Some may be missed.")
     peptide_proteins_map = {}
+    n_proteins_processed = 0
     for record in fasta_io.load_fasta_records(args.fasta):
+        if n_proteins_processed % 10000 == 0:
+            logger.debug("Processed {} proteins".format(n_proteins_processed))
         peps_to_remove = []
-        for peptide in peptides:
-            if peptide in record.seq:
-                if args.listproteins:
-                    if peptide not in peptide_proteins_map:
-                        peptide_proteins_map[peptide] = []
-                    peptide_proteins_map[peptide].append(record.name)
-                else:
-                    print(peptide)
-                    peps_to_remove.append(peptide)
+        protein_tryppeps = set(peptides.calc_tryptic_peptides(str(record.seq), args.maxmissedcleavages))
+        for peptide in all_peptides.intersection(protein_tryppeps):
+            if args.listproteins:
+                if peptide not in peptide_proteins_map:
+                    peptide_proteins_map[peptide] = []
+                peptide_proteins_map[peptide].append(record.name)
+            else:
+                print(peptide)
+                peps_to_remove.append(peptide)
         for pep in peps_to_remove:
-            peptides.remove(pep)
+            all_peptides.remove(pep)
+        n_proteins_processed += 1
     if args.listproteins:
         for peptide in peptide_proteins_map:
             print("%s\t%s" % (peptide, ",".join(peptide_proteins_map[peptide])))
