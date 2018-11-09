@@ -171,7 +171,7 @@ def plot_ms2_spectrum(ms2_spectrum, peptide_sequence=None, title=None):
 
 def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
                      peptide_sequence1=None, peptide_sequence2=None,
-                     title=None):
+                     title=None, mz_range = None):
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     if title:
@@ -211,6 +211,9 @@ def plot_two_spectra(ms2_spectrum1, ms2_spectrum2,
     min_mz = min(min(ms2_spectrum1.mz_array), min(ms2_spectrum2.mz_array))
     max_mz = max(max(ms2_spectrum1.mz_array), max(ms2_spectrum2.mz_array))
     ax.plot([min_mz, max_mz], [0.0, 0.0], color='black')
+
+    if mz_range is not None:
+        plt.xlim(mz_range)
 
     return figure
 

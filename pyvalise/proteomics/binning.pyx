@@ -67,7 +67,9 @@ def calc_nbins(float fragment_min_mz, float fragment_max_mz, float bin_size):
 
 
 
-def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_SIZE):
+def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_SIZE,
+                should_normalize=False, should_normalize_exclude_precursor=False,
+                window_exclude_precursor_signal=DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN):
     """
     Bin the MS spectra, processing and yielding one at a time.
     :param spectra: a generator or list. type is spectra.MSSpectrum
@@ -78,7 +80,9 @@ def bin_spectra(spectra, fragment_min_mz, fragment_max_mz, bin_size=DEFAULT_BIN_
     """
     for spectrum in spectra:
         yield bin_spectrum(spectrum.mz_array, spectrum.intensity_array,
-                           fragment_min_mz, fragment_max_mz, bin_size)
+                           fragment_min_mz, fragment_max_mz, bin_size,
+                           spectrum.precursor_mz, should_normalize, should_normalize_exclude_precursor,
+                           window_exclude_precursor_signal=DEFAULT_PRECURSOR_MZ_WINDOW_EXCLUDE_UP_DOWN)
 
 
 

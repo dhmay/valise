@@ -86,14 +86,14 @@ def write_pdf(figures, pdf_file):
             plot.savefig(pdf, format='pdf')
 
 
-def write_png(figure, png_file):
+def write_png(figure, png_file, dpi=200):
     """
     Write a figure to a .png
     :param figure:
     :param png_file:
     :return:
     """
-    figure.savefig(png_file, format='png')
+    figure.savefig(png_file, format='png', dpi=dpi)
 
 
 def hist(values, title=None, bins=DEFAULT_HIST_BINS, color=None,
@@ -218,7 +218,7 @@ def _violin_plot(ax, data, pos, bp=True, color='y'):
 
 def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
               legend_labels=None, legend_on_chart=False, histtype='bar',
-              should_normalize=False):
+              should_normalize=False, y_axis_limits=None, x_axis_limits=None):
     """histogram of multiple datasets.
     valueses: a list of lists of values"""
     figure = plt.figure()
@@ -246,6 +246,10 @@ def multihist(valueses, title=None, bins=DEFAULT_HIST_BINS, colors=None,
         add_legend_to_chart(ax, legend_on_chart=legend_on_chart, labels=legend_labels)
     if title:
         ax.set_title(title)
+    if y_axis_limits is not None:
+        plt.ylim(y_axis_limits)
+    if x_axis_limits is not None:
+        plt.xlim(x_axis_limits)
     return figure
 
 
@@ -315,10 +319,7 @@ def line_plot(x_values, y_values, title=None, lowess=False,
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
     ax.plot(x_values, y_values)
-    if y_axis_limits is not None:
-        plt.ylim(y_axis_limits)
-    if x_axis_limits is not None:
-        plt.xlim(x_axis_limits)
+
     if lowess:
         lowess = sm.nonparametric.lowess(y_values, x_values, frac=0.1)
         ax.plot(lowess[:, 0], lowess[:, 1])
@@ -336,7 +337,10 @@ def line_plot(x_values, y_values, title=None, lowess=False,
         assert (xtick_labels is not None)
         ax.set_xticks(xtick_positions)
         ax.set_xticklabels(xtick_labels)
-
+    if y_axis_limits is not None:
+        plt.ylim(y_axis_limits)
+    if x_axis_limits is not None:
+        plt.xlim(x_axis_limits)
     return figure
 
 
@@ -463,7 +467,7 @@ def multiline(x_valueses, y_valueses, labels=None, title=None, colors=None,
     return figure
 
 
-def cdfs(valueses, xlabel='value', labels=None, title='CDF', n_bins=500):
+def cdfs(valueses, xlabel='value', labels=None, title='CDF', n_bins=500, colors=None):
     """
     Plot one or more cumulative density functions
     :param valueses:
@@ -490,14 +494,15 @@ def cdfs(valueses, xlabel='value', labels=None, title='CDF', n_bins=500):
                      title=title,
                      xlabel=xlabel,
                      ylabel='density',
-                     labels=labels)
+                     labels=labels, colors=colors)
 
 
 def multiscatter(x_valueses, y_valueses, title=None,
                  xlabel='', ylabel='', pointsize=DEFAULT_POINTSIZE, labels=None,
                  should_logx=False, should_logy=False, log_base=DEFAULT_LOG_BASE,
                  legend_on_chart=False, colors=COLORS, rotate_labels=False,
-                 draw_1to1=False):
+                 draw_1to1=False,
+                 x_axis_limits=None, y_axis_limits=None):
     """
     Scatterplot multiple sets of values in different colors
     :param x_valueses:
@@ -541,6 +546,10 @@ def multiscatter(x_valueses, y_valueses, title=None,
         plt.yscale('log', basey=log_base)
     if should_logx:
         plt.xscale('log', basex=log_base)
+    if x_axis_limits is not None:
+        plt.xlim(x_axis_limits)
+    if y_axis_limits is not None:
+        plt.ylim(y_axis_limits)
     if draw_1to1:
         lims = [
             np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
@@ -704,7 +713,7 @@ def heatmap_direct(values_ndarray, xlabel=None, ylabel=None, title=None,
 def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
             ytick_positions=None, ylabels=None, colormap='gray',
             xlabel=None, ylabel=None, title=None, show_colorbar=True,
-            width_proportion=1.0, height_proportion=1.0):
+            width_proportion=1.0, height_proportion=1.0, rotate_xlabels=False):
     """heatmap. You want axis labels, you provide 'em."""
     figure = plt.figure()
     ax = figure.add_subplot(1, 1, 1)
@@ -729,6 +738,10 @@ def heatmap(values_ndarray, xtick_positions=None, xlabels=None,
     box = ax.get_position()
     ax.set_position([box.x0 + box.width * (1.0 - width_proportion), box.y0 + box.height * (1.0 - height_proportion),
                      box.width * width_proportion, box.height * height_proportion])
+    if rotate_xlabels:
+        locs, ticklabels = plt.xticks()
+        logger.debug("Rotating xkktick labels 90 degrees.")
+        plt.setp(ticklabels, rotation=90)
 
     return figure
 

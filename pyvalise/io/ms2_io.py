@@ -78,7 +78,8 @@ def read_header_namevalues(ms2_file):
     return result
 
 
-def read_ms2_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=False):
+def read_ms2_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=False,
+                   max_scans=999999999999999):
     """
     Silly cover method, because ms2 files only contain ms2 scans. For consistency with mzml_io
     :param ms2_file:
@@ -87,7 +88,8 @@ def read_ms2_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=
     :return:
     """
     return read_scans(ms2_file, precursor_from_zline=precursor_from_zline,
-                      should_calc_zs_mz_diffs=should_calc_zs_mz_diffs)
+                      should_calc_zs_mz_diffs=should_calc_zs_mz_diffs,
+                      max_scans=max_scans)
 
 
 def prepare_spectrum(scan_number, precursor_mz, retention_time, fragment_mzs, fragment_intensities,
@@ -148,7 +150,8 @@ def prepare_spectrum(scan_number, precursor_mz, retention_time, fragment_mzs, fr
 
 
 def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=False,
-               require_rt=False, should_renumber_if_needed=False):
+               require_rt=False, should_renumber_if_needed=False,
+               max_scans=999999999999999):
     """
     yield all scans in the file at ms2_filepath.
     If the scan has multiple Z lines, keep the first one.
@@ -260,6 +263,8 @@ def read_scans(ms2_file, precursor_from_zline=True, should_calc_zs_mz_diffs=Fals
         yield spectrum
         n_yielded += 1
         logger.debug("Yielded #%d" % n_yielded)
+        if n_yielded >= max_scans:
+            logger.debug("Stopping early after the specified {} scans.".format(n_yielded))
     except Exception as e:
         logger.debug("Incomplete scan!")
         logger.debug(str(e))

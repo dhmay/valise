@@ -45,6 +45,8 @@ def declare_gather_args():
                         help='output file with values unique to the first file')
     parser.add_argument('--outintersection', type=argparse.FileType('w'),
                         help='output file with values occuring in every file')
+    parser.add_argument('--outunion', type=argparse.FileType('w'),
+                        help='output file with values occuring in any file')
     parser.add_argument('--percolatorqpoint01', action="store_true",
                         help='set "filtercolumn" to "percolator\ q-value" and "maxfiltervalue" to 0.01')
     parser.add_argument('--debug', action="store_true", help='Enable debug logging')
@@ -147,6 +149,12 @@ def main():
             args.outintersection.write("%s\n" % val)
         args.outintersection.close()
         print("Wrote %s values that are in all sets to file %s" % (len(inters), args.outintersection.name))
+    if args.outunion:
+        union_values = set().union(*value_sets)
+        for val in union_values:
+            args.outunion.write("{}\n".format(val))
+        args.outunion.close()
+        print("Wrote %s values that are in any input file to file %s" % (len(union_values), args.outunion.name))
     print("Done")
 
     logger.debug("End time: %s. Elapsed time: %s" % (datetime.now(), datetime.now() - script_start_time))

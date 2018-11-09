@@ -73,10 +73,8 @@ def read_scan(scan):
                                   intensity_array)
     elif ms_level == 2:
         print(scan)
-        precurso_mz = scan['precursorMz']['precursorMz']
         precursor_selected_ion_map = scan['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]
         precursor_mz = precursor_selected_ion_map['selected ion m/z']
-        charge = None
         if 'charge state' in precursor_selected_ion_map:
             charge = precursor_selected_ion_map['charge state']
         elif 'possible charge state' in precursor_selected_ion_map:
